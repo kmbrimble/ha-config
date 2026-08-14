@@ -1,0 +1,505 @@
+kiosk_mode:
+  user_settings:
+  - users:
+    - Wallpanel
+    hide_sidebar: true
+    hide_header: true
+    ignore_entity_settings: true
+button_card_templates:
+  light_tile_orchid:
+    layout: vertical
+    show_icon: false
+    aspect_ratio: 2.9/1
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+    show_state: false
+    styles:
+      card:
+      - padding: 5px 4px
+      - border-radius: 16px
+      - box-shadow: none
+      grid:
+      - grid-template-rows: auto
+      name:
+      - font-size: 14px
+      - font-weight: 500
+      - white-space: normal
+      - text-overflow: unset
+      - word-break: break-word
+      - justify-self: center
+      - padding-top: 4px
+    card_mod:
+      style: |
+        ha-card {
+          border-radius: 16px !important;
+          {% if is_state(config.entity, 'on') %}
+            background: orchid !important;
+            color: black !important;
+          {% else %}
+            background: rgba(255,255,255,0.05) !important;
+            color: var(--primary-text-color) !important;
+          {% endif %}
+        }
+  light_tile_orchid_3col:
+    aspect_ratio: 3.5/1
+    styles:
+      card:
+      - padding: 5px 4px
+  section_header_orange:
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 0 0 2px 0
+      - margin: 0
+      name:
+      - color: '#ff8c00'
+      - font-size: 13px
+      - font-weight: 600
+      - text-align: center
+  climate_tile_room:
+    layout: vertical
+    show_state: false
+    show_name: false
+    custom_fields:
+      i: |
+        [[[
+          const vars = variables || {};
+          const icon = vars.room_icon || 'mdi:help-circle-outline';
+          return `<ha-icon icon="${icon}" style="--mdc-icon-size:20px;"></ha-icon>`;
+        ]]]
+      t: |
+        [[[
+          const vars = variables || {};
+          const tempId = vars.temp_entity;
+          if (!tempId || !states[tempId]) return '--';
+          const e = states[tempId];
+          const unit = e.attributes.unit_of_measurement || '';
+          const val = Number.parseFloat(e.state);
+          const num = Number.isNaN(val) ? e.state : val.toFixed(0);
+
+          const tempIcon = `<ha-icon icon="mdi:thermometer"
+                                style="--mdc-icon-size:14px; color:#ff5555;
+                                       vertical-align:middle; margin-right:3px;"></ha-icon>`;
+
+          return `${tempIcon}<span>${num} ${unit}</span>`;
+        ]]]
+      h: |
+        [[[
+          const vars = variables || {};
+          const humId = vars.hum_entity;
+          if (!humId || !states[humId]) return '--';
+          const e = states[humId];
+          const unit = e.attributes.unit_of_measurement || '';
+          const val = Number.parseFloat(e.state);
+          const num = Number.isNaN(val) ? e.state : val.toFixed(0);
+
+          const humIcon = `<ha-icon icon="mdi:water"
+                                style="--mdc-icon-size:14px; color:#4da6ff;
+                                       vertical-align:middle; margin-right:3px;"></ha-icon>`;
+
+          return `${humIcon}<span>${num} ${unit}</span>`;
+        ]]]
+    styles:
+      card:
+      - padding: 6px 4px
+      - border-radius: 16px
+      - box-shadow: none
+      - background-color: rgba(255,255,255,0.05)
+      grid:
+      - grid-template-areas: '"i" "t" "h"'
+      - grid-template-rows: auto auto auto
+      - grid-template-columns: 1fr
+      - row-gap: 2px
+      - column-gap: 0px
+      - align-items: center
+      - justify-items: center
+      custom_fields:
+        i:
+        - justify-self: center
+        t:
+        - justify-self: center
+        - font-size: 14px
+        - font-weight: 600
+        h:
+        - justify-self: center
+        - font-size: 12px
+  cpu_temp_tile:
+    show_icon: false
+    show_name: false
+    show_state: false
+    tap_action:
+      action: more-info
+    aspect_ratio: 5.5/1
+    custom_fields:
+      i: |
+        [[[
+          const vars = variables || {};
+          const icon = vars.icon || 'mdi:thermometer';
+          return `<ha-icon icon="${icon}"
+                           style="--mdc-icon-size:18px;"></ha-icon>`;
+        ]]]
+      t: |
+        [[[
+          const vars = variables || {};
+          const id = vars.cpu_entity || (entity && entity.entity_id);
+          if (!id || !states[id]) return '--';
+          const e = states[id];
+          const val = Number.parseFloat(e.state);
+          if (Number.isNaN(val)) return e.state;
+          const unit = e.attributes.unit_of_measurement || '°C';
+          return `${val.toFixed(0)} ${unit}`;
+        ]]]
+    styles:
+      card:
+      - padding: 6px 8px
+      - border-radius: 16px
+      - box-shadow: none
+      - background-color: rgba(255,255,255,0.05)
+      grid:
+      - grid-template-areas: '"i t"'
+      - grid-template-columns: auto auto
+      - column-gap: 6px
+      - align-items: center
+      - justify-content: center
+      custom_fields:
+        i:
+        - justify-self: center
+        t:
+        - justify-self: center
+        - font-size: 12px
+        - font-weight: 600
+  temp_status_tile:
+    show_icon: false
+    show_name: false
+    show_state: false
+    tap_action:
+      action: more-info
+    aspect_ratio: 5.5/1
+    custom_fields:
+      i: |
+        [[[
+          const vars = variables || {};
+          // Allow entity from variables.entity OR from the card's entity field
+          const entityId = vars.entity || config.entity || null;
+
+          if (!entityId || !states[entityId]) {
+            return `<ha-icon icon="mdi:help-circle-outline"
+                             style="--mdc-icon-size:16px;"></ha-icon>`;
+          }
+
+          const st = states[entityId].state;
+
+          // By default: "on" = PROBLEM (can be flipped with problem_when_on: false)
+          const problemWhenOn = (vars.problem_when_on !== false);
+          const isOk = problemWhenOn ? (st !== 'on') : (st === 'on');
+
+          const icon = isOk ? 'mdi:check-circle' : 'mdi:alert-circle';
+          const color = isOk
+            ? 'var(--success-color, #4caf50)'
+            : 'var(--error-color, #f44336)';
+
+          return `<ha-icon icon="${icon}"
+                           style="--mdc-icon-size:16px;color:${color};"></ha-icon>`;
+        ]]]
+      label: |
+        [[[
+          const vars = variables || {};
+          return vars.label || 'Status';
+        ]]]
+    styles:
+      card:
+      - padding: 3px 8px 3px 8px
+      - border-radius: 16px
+      - box-shadow: none
+      - background-color: rgba(255,255,255,0.05)
+      grid:
+      - grid-template-areas: '"i label"'
+      - grid-template-columns: auto 1fr
+      - column-gap: 4px
+      - align-items: center
+      - justify-content: center
+      custom_fields:
+        i:
+        - justify-self: center
+        - align-self: center
+        - margin-top: -2px
+        label:
+        - justify-self: center
+        - font-size: 11px
+        - font-weight: 600
+        - white-space: nowrap
+        - text-overflow: unset
+        - overflow: visible
+        - line-height: 1
+        - margin-top: -1px
+views:
+- title: Wallpanel
+  path: wallpanel
+  panel: true
+  visible:
+  - user: 0700fe624e0c46f6a4a995c78aeb991b
+  cards:
+  - type: custom:layout-card
+    layout_type: custom:grid-layout
+    layout:
+      grid-template-columns: 1.6fr 1.4fr
+      grid-gap: 0px 8px
+    cards:
+    - type: vertical-stack
+      cards:
+      - type: picture-entity
+        show_state: false
+        show_name: false
+        camera_view: live
+        fit_mode: cover
+        entity: camera.front_gate_live
+        image: https://demo.home-assistant.io/stub_config/bedroom.png
+        camera_image: camera.cameras_front_gate
+        tap_action:
+          action: none
+      - type: picture-entity
+        show_state: false
+        show_name: false
+        camera_view: live
+        fit_mode: cover
+        image: https://demo.home-assistant.io/stub_config/bedroom.png
+        camera_image: camera.cameras_wallpanel_cycle
+        entity: camera.cameras_wallpanel_cycle
+    - type: vertical-stack
+      cards:
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+        - type: vertical-stack
+          cards:
+          - type: custom:button-card
+            template: section_header_orange
+            name: Upstairs
+          - type: grid
+            columns: 4
+            square: false
+            cards:
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.master_bedroom
+              name: Master Bedroom
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.bedroom_3
+              name: Bedroom 3
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.upstairs_tv
+              name: Upstairs TV
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.upstairs_pool
+              name: Upstairs Pool
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.upstairs_hallway
+              name: Upstairs Hallway
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.stairs
+              name: Stairs
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.upper_deck
+              name: Upper Deck
+        - type: vertical-stack
+          cards:
+          - type: custom:button-card
+            template: section_header_orange
+            name: Downstairs
+          - type: grid
+            columns: 4
+            square: false
+            cards:
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.kitchen
+              name: Kitchen
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.downstairs_living
+              name: Downstairs Living
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.dining_room_lights
+              name: Dining Room
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.entry_hallway
+              name: Entry Hallway
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.garage
+              name: Garage Hallway
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.garage_internal
+              name: Garage
+            - type: custom:button-card
+              template: light_tile_orchid
+              entity: light.laundry_light_socket_1
+              name: Laundry
+        - type: vertical-stack
+          cards:
+          - type: custom:button-card
+            template: section_header_orange
+            name: Outside
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: light.house_front
+              name: House Front
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: light.footpath_lights
+              name: Footpath
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: light.lower_deck
+              name: Lower Deck
+        card_mod:
+          style: |
+            ha-card {
+              border: 2px solid #ff8c00;   /* orange for all light groups */
+              border-radius: 16px;
+              padding: 6px 8px 8px;
+              background: rgba(0,0,0,0.4);
+              --stack-in-card-gap: 4px;
+            }
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+        - type: vertical-stack
+          cards:
+          - type: custom:button-card
+            template: section_header_orange
+            name: Doors
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: switch.car_garage_socket_1
+              name: Car
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: switch.bike_garage_socket_1
+              name: Bike
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: switch.carport_door_socket_1
+              name: Carport
+        - type: vertical-stack
+          cards:
+          - type: custom:button-card
+            template: section_header_orange
+            name: Blinds
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: script.open_all_blinds
+              name: Open
+              tap_action:
+                action: call-service
+                service: script.open_all_blinds
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: script.stop_all_blinds
+              name: Stop
+              tap_action:
+                action: call-service
+                service: script.stop_all_blinds
+            - type: custom:button-card
+              template:
+              - light_tile_orchid
+              - light_tile_orchid_3col
+              entity: script.close_all_blinds
+              name: Close
+              tap_action:
+                action: call-service
+                service: script.close_all_blinds
+        card_mod:
+          style: |
+            ha-card {
+              border: 2px solid #ffd700;   /* shared yellow border */
+              border-radius: 16px;
+              padding: 6px 8px 8px;
+              background: rgba(0,0,0,0.4);
+              --stack-in-card-gap: 4px;
+            }
+      - type: custom:stack-in-card
+        mode: vertical
+        cards:
+        - type: custom:button-card
+          template: section_header_orange
+          name: Climate
+        - type: grid
+          columns: 5
+          square: false
+          cards:
+          - type: custom:button-card
+            template: climate_tile_room
+            variables:
+              temp_entity: sensor.bedroom_remote_temperature
+              hum_entity: sensor.bedroom_remote_humidity
+              room_icon: mdi:bed
+          - type: custom:button-card
+            template: climate_tile_room
+            variables:
+              temp_entity: sensor.downstairs_living_remote_temperature
+              hum_entity: sensor.downstairs_living_remote_humidity
+              room_icon: mdi:sofa
+          - type: custom:button-card
+            template: climate_tile_room
+            variables:
+              temp_entity: sensor.server_room_temperature
+              hum_entity: sensor.server_monitor_server_exhaust_humidity
+              room_icon: mdi:desktop-classic
+          - type: custom:button-card
+            template: climate_tile_room
+            variables:
+              temp_entity: sensor.network_cupboard_temperature
+              hum_entity: sensor.network_cupboard_humidity
+              room_icon: mdi:ethernet
+          - type: custom:button-card
+            template: climate_tile_room
+            variables:
+              temp_entity: sensor.office_temperature
+              hum_entity: sensor.office_humidity
+              room_icon: mdi:desk

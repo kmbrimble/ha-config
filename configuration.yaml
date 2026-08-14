@@ -1,0 +1,266 @@
+homeassistant:
+  packages: !include_dir_named packages
+  auth_providers:
+    - type: trusted_networks
+      trusted_networks:
+        - 192.168.0.16
+      allow_bypass_login: true
+      trusted_users:
+        192.168.0.16: cba460bfd5884d049c7e871642161216
+    - type: homeassistant
+  
+
+
+      
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+frontend:
+  themes: !include_dir_merge_named themes
+  extra_module_url:
+    - /hacsfiles/kiosk-mode/kiosk-mode.js?v=1
+    - /hacsfiles/lovelace-card-mod/card-mod.js?v=1
+    - /hacsfiles/button-card/button-card.js?v=1
+    - /hacsfiles/stack-in-card/stack-in-card.js?v=1
+    - /hacsfiles/lovelace-layout-card/layout-card.js?v=1
+    - /hacsfiles/lovelace-wallpanel/wallpanel.js?v=1
+    - /hacsfiles/light-entity-card/null?v=1
+    - /hacsfiles/slider-button-card/slider-button-card.js?v=1
+    - /hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?v=1
+    - /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
+    - /hacsfiles/weather-radar-card/weather-radar-card.js?v=1
+    - https://cdn.jsdelivr.net/gh/bramkragten/weather-card/dist/weather-card.min.js
+
+lovelace:
+  mode: yaml
+  dashboards:
+    kiosk-main:
+      mode: yaml
+      title: Kiosk
+      icon: mdi:monitor-dashboard
+      show_in_sidebar: true
+      filename: dashboards/kiosk-main.yaml
+    kiosk-candidate:
+      mode: yaml
+      title: Kiosk (candidate)
+      icon: mdi:monitor-dashboard
+      show_in_sidebar: false
+      filename: dashboards/kiosk-candidate.yaml
+    wall-main:
+      mode: yaml
+      title: Wall
+      icon: mdi:tablet-dashboard
+      show_in_sidebar: true
+      filename: dashboards/wall-main.yaml
+    wall-candidate:
+      mode: yaml
+      title: Wall (candidate)
+      icon: mdi:tablet-dashboard
+      show_in_sidebar: false
+      filename: dashboards/wall-candidate.yaml
+
+#http:
+#  # ssl_certificate: /ssl/fullchain.pem
+#  # ssl_key: /ssl/privkey.pem
+#  use_x_forwarded_for: true
+#  trusted_proxies:
+#    - 192.168.0.23
+#    - 192.168.0.10
+#    - 192.168.0.24
+#    - 172.30.33.0/24
+
+#influxdb:
+#    host: a0d7b954-influxdb
+#    port: 8086
+#    database: homeassistant
+#    username: homeassistant
+#    password: homeassistant
+#    max_retries: 3
+#    ssl: false
+#    verify_ssl: false
+#    default_measurement: state
+
+
+#google_assistant:
+#  project_id: homeassistant-ca8e5
+#  service_account: !include SERVICE_ACCOUNT.json
+#  secure_devices_pin: "2626"
+#  report_state: true
+#  expose_by_default: true
+#  entity_config:
+#    script.car_open:
+#      name: "Open Car"
+#      aliases:
+#        - "Open Sesame"
+#    script.car_close:
+#      name: "Close Car"
+#      aliases:
+#        - "Close Sesame"
+#    script.bike_open:
+#      name: "Bike Open"
+#      aliases:
+#        - "Magic Open"
+#    script.bike_close:
+#      name: "Bike Close"
+#      aliases:
+#        - "Magic Close"
+
+
+smartir:
+
+climate:
+  - platform: smartir
+    name: Living Room AC
+    unique_id: living_room_ac
+    device_code: 1291
+    controller_data: remote.downstairs_living_remote
+    temperature_sensor: sensor.downstairs_living_remote_temperature
+    humidity_sensor: sensor.downstairs_living_remote_humidity
+    power_sensor: binary_sensor.ac_power
+  - platform: smartir
+    name: Bedroom AC
+    unique_id: mainbed_ac
+    device_code: 1291
+    controller_data: remote.bedroom_remote
+    temperature_sensor: sensor.bedroom_remote_temperature
+    humidity_sensor: sensor.bedroom_remote_humidity
+    power_sensor: binary_sensor.ac_power
+
+sensor:
+  - platform: time_date
+    display_options:
+      - time
+
+  # 24h Peak Power Tracker (Purely for interest/stats)
+  - platform: statistics
+    name: "Grid Power Peak (24h)"
+    unique_id: grid_power_peak_24h
+    entity_id: sensor.emerald_grid_power_usage
+    state_characteristic: value_max
+    max_age:
+      hours: 24
+      
+recorder:
+  db_url: !secret mariadb_recorder_url
+  
+template:
+  - trigger:
+      - platform: mqtt
+        topic: "home/emerald/energy/pulses"
+    sensor:
+      - name: "Total Grid Energy"
+        unique_id: "emerald_accumulator_kwh"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:lightning-bolt-circle
+        state: >
+          {# 1. Get the new pulses from the MQTT message #}
+          {% set new_pulses = trigger.payload | int(0) %}
+          
+          {# 2. Convert to kWh (1000 pulses = 1 kWh) #}
+          {% set new_kwh = new_pulses / 1000.0 %}
+          
+          {# 3. Add to the existing total #}
+          {{ (this.state | float(0)) + new_kwh }}
+
+  # Sum the three grid energy sensors into a single combined sensor
+  - sensor:
+      - name: "Grid Energy Daily Total"
+        unique_id: grid_energy_daily_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        icon: mdi:transmission-tower
+        state: >
+          {% set peak = states('sensor.grid_energy_tariff_tracker_peak') | float(0) %}
+          {% set shoulder = states('sensor.grid_energy_tariff_tracker_shoulder') | float(0) %}
+          {% set offpeak = states('sensor.grid_energy_tariff_tracker_off_peak') | float(0) %}
+          {{ (peak + shoulder + offpeak) | round(2) }}
+        availability: >
+          {{ has_value('sensor.grid_energy_tariff_tracker_peak') and
+             has_value('sensor.grid_energy_tariff_tracker_shoulder') and
+             has_value('sensor.grid_energy_tariff_tracker_off_peak') }}
+
+  # Make all Arlec smart plugs energy sensors compatible with built-in Energy dashboard
+  - sensor:
+      - name: "Bike Garage Energy"
+        unique_id: bike_garage_energy_fixed
+        state: "{{ states('sensor.bike_garage_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Car Garage Energy"
+        unique_id: car_garage_energy_fixed
+        state: "{{ states('sensor.car_garage_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Carport Door Energy"
+        unique_id: carport_door_energy_fixed
+        state: "{{ states('sensor.carport_door_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Dining Table Energy"
+        unique_id: dining_table_energy_fixed
+        state: "{{ states('sensor.dining_table_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Footpath Lights Energy"
+        unique_id: footpath_lights_energy_fixed
+        state: "{{ states('sensor.footpath_lights_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Laundry Light Energy"
+        unique_id: laundry_light_energy_fixed
+        state: "{{ states('sensor.laundry_light_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Office Energy"
+        unique_id: office_energy_fixed
+        state: "{{ states('sensor.office_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "TV Lounge Energy"
+        unique_id: tv_lounge_energy_fixed
+        state: "{{ states('sensor.tv_lounge_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+mqtt:
+  sensor:
+    # 1. Real-time Power Draw (For Graphs/Instant view)
+    - name: "Grid Power Usage"
+      unique_id: "emerald_power_watts"
+      state_topic: "home/emerald/power/watts"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+
+    # 2. Pulse Count (Raw data from device)
+    - name: "Grid Pulse Count"
+      unique_id: "emerald_energy_pulses"
+      state_topic: "home/emerald/energy/pulses"
+      state_class: total
+      unit_of_measurement: "pulses"

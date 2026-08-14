@@ -1,0 +1,681 @@
+- id: '1671004551205'
+  alias: Footpath Lights after Sunset - On
+  description: ''
+  triggers:
+  - trigger: time
+    at: sensor.sun_dusk
+  conditions: []
+  actions:
+  - type: turn_on
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  mode: single
+- id: '1671006087790'
+  alias: Footpath Lights after Sunset - Off
+  description: ''
+  triggers:
+  - at: '20:30:00'
+    trigger: time
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  mode: single
+- id: '1671249681521'
+  alias: Bedroom 3 - ON
+  description: ''
+  triggers:
+  - trigger: time
+    at: '20:10:00'
+  conditions: []
+  actions:
+  - delay:
+      minutes: '{{ range(0, 30)|random|int }}'
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 20
+    target:
+      entity_id: light.bedroom_3
+  mode: single
+- id: '1671267096676'
+  alias: Google Assistant Sync
+  description: ''
+  trigger:
+  - platform: time_pattern
+    hours: '1'
+  condition: []
+  action:
+  - device_id: 5a0dfff793c873ffb2c3be16a4c1cd54
+    domain: button
+    entity_id: button.synchronize_devices
+    type: press
+  mode: single
+- id: '1672904572445'
+  alias: Inside Lights Off at Night
+  description: ''
+  triggers:
+  - at: '21:45:00'
+    trigger: time
+  conditions: []
+  actions:
+  - delay:
+      minutes: '{{ range(0, 30)|random|int }}'
+  - target:
+      entity_id:
+      - light.entry_hallway_front_door
+      - light.stair_lower
+      - light.upstairs_tv_outer_1
+      - light.upstairs_tv_outer_2
+      - light.garage_internal
+      - light.garage
+      - light.upstairs_pool
+      - light.upstairs_tv
+      area_id: []
+    data: {}
+    action: light.turn_off
+  mode: single
+- id: '1677314028566'
+  alias: Downstairs Lights On before Sunset
+  description: ''
+  triggers:
+  - trigger: time
+    at: sensor.sun_12deg_before_sunset
+  conditions: []
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 30
+    target:
+      entity_id:
+      - light.dining3
+      - light.dining7
+  mode: single
+- id: '1677314096452'
+  alias: Downstairs Lights Off at Night
+  description: ''
+  triggers:
+  - at: '22:00:00'
+    trigger: time
+  conditions: []
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.dining3
+      - light.dining7
+  mode: single
+- id: '1702893981116'
+  alias: Lights On Before Sunset
+  description: ''
+  triggers:
+  - alias: Lights On Before Sunset
+    event: sunset
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 30
+    target:
+      entity_id:
+      - light.upstairs_tv
+      - light.stair_lower
+      - light.entry_hallway_front_door
+      - light.garage
+      - light.garage_internal
+      - light.bed_light
+  - delay:
+      hours: 1
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+    enabled: false
+  - target:
+      entity_id:
+      - light.house_front
+    data:
+      kelvin: 4995
+      brightness_pct: 15
+    action: light.turn_on
+    enabled: false
+  mode: single
+- id: '1705225780276'
+  alias: Outside Lights Off at Night
+  description: ''
+  triggers:
+  - at: '20:00:00'
+    trigger: time
+  conditions: []
+  actions:
+  - target:
+      entity_id:
+      - light.house_front
+      area_id: []
+    data: {}
+    action: light.turn_off
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - target:
+      entity_id:
+      - light.house_front
+      area_id: []
+    data: {}
+    action: light.turn_off
+  mode: single
+- id: '1707648548973'
+  alias: Lower Deck off at night
+  description: ''
+  trigger:
+  - platform: time
+    at: '22:00:00'
+  condition: []
+  action:
+  - service: light.turn_off
+    target:
+      entity_id: light.lower_deck
+    data: {}
+  mode: single
+- id: '1713603702579'
+  alias: Dim Front Lights at Night
+  description: ''
+  trigger:
+  - platform: time
+    at: '19:30:00'
+  condition: []
+  action:
+  - service: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 1
+    target:
+      entity_id: light.house_front
+  mode: single
+- id: '1742538708879'
+  alias: Garage Doors off at night
+  description: ''
+  triggers:
+  - trigger: time
+    at: '21:00:00'
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.bike_garage_socket_1
+      - switch.car_garage_socket_1
+      - switch.carport_door_socket_1
+  mode: single
+- id: '1745647833162'
+  alias: Laundry Evening - ON
+  description: ''
+  triggers:
+  - trigger: time
+    at: '16:00:00'
+  conditions: []
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.laundry_light_socket_1
+  - delay:
+      hours: 6
+      minutes: 30
+      seconds: 0
+      milliseconds: 0
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.laundry_light_socket_1
+  mode: single
+- id: '1748645808483'
+  alias: Daytime Lights If Home
+  description: ''
+  triggers:
+  - trigger: time
+    at: 06:00:00
+  conditions:
+  - condition: or
+    conditions:
+    - condition: zone
+      entity_id: person.kieren
+      zone: zone.home
+    - condition: zone
+      entity_id: person.t
+      zone: zone.home
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 20
+    target:
+      entity_id:
+      - light.stair_lower
+      - light.entry_hallway_front_door
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 1
+    target:
+      entity_id: light.upstairs_hallway
+  mode: single
+- id: '1751182976776'
+  alias: Front Gate IR On at night
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /2
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+    before_offset: -00:30:00
+    after_offset: 00:30:00
+  actions:
+  - device_id: 2bf7c90629efb2289d294e0ac139a4e9
+    domain: button
+    entity_id: 1ed6a076af4f89efa3064cfddfb83b38
+    type: press
+  mode: single
+- id: '1751313571376'
+  alias: 'Doorbell - Lights on If Pressed '
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - event.front_gate_doorbell
+  conditions:
+  - condition: device
+    type: is_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  actions:
+  - repeat:
+      count: 5
+      sequence:
+      - action: light.toggle
+        metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - light.dining_room_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 100
+    target:
+      entity_id: light.house_front
+  - delay:
+      hours: 0
+      minutes: 2
+      seconds: 0
+      milliseconds: 0
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.house_front
+  mode: single
+- id: '1753261424213'
+  alias: Motion - Side Yard
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.cameras_side_yard_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  - condition: device
+    type: is_off
+    device_id: ac4bd6d7610348b9940d14d6495d5179
+    entity_id: ee6258d308aedf7b45caea34984788b0
+    domain: light
+  actions:
+  - alias: Turn on the light
+    action: light.turn_on
+    data:
+      brightness_pct: 100
+    target:
+      entity_id:
+      - light.bedroom_3
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      entity_id: binary_sensor.cameras_top_yard_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+    timeout:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - alias: Wait the number of seconds that has been set
+    delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - alias: Turn off the light
+    action: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.bedroom_3
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - alias: Turn off the light
+    action: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.bedroom_3
+  mode: single
+  max_exceeded: silent
+- id: '1753261770657'
+  alias: Motion - Front
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.cameras_front_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  - condition: device
+    type: is_off
+    device_id: e49b5f86ab3c7c2b93b7aaf74c9f7d91
+    entity_id: 0c5e0bdf2381f3c69564a093b897f52e
+    domain: light
+  actions:
+  - alias: Turn on the light
+    action: light.turn_on
+    data:
+      brightness_pct: 100
+    target:
+      entity_id:
+      - light.house_front
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - alias: Turn on the light
+    action: light.turn_on
+    data:
+      brightness_pct: 100
+    target:
+      entity_id:
+      - light.bedroom_3
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      entity_id: binary_sensor.cameras_top_yard_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+    timeout:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - alias: Wait the number of seconds that has been set
+    delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - alias: Turn off the light
+    action: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.house_front
+      - light.bedroom_3
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - alias: Turn off the light
+    action: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.house_front
+      - light.bedroom_3
+  mode: restart
+  max_exceeded: silent
+- id: '1753261988791'
+  alias: Motion - Back Gate
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.cameras_back_gate_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  - condition: device
+    type: is_off
+    device_id: e60fb95bf9ccc89231320184f9a4a3c1
+    entity_id: 20ba9894196cda5683972ad4ae88c931
+    domain: light
+  actions:
+  - alias: Turn on the light
+    action: light.turn_on
+    data:
+      brightness_pct: 100
+    target:
+      entity_id:
+      - light.lower_deck
+      - light.upper_deck
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      entity_id: binary_sensor.cameras_top_yard_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+    timeout:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - alias: Wait the number of seconds that has been set
+    delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - alias: Turn off the light
+    action: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.lower_deck
+      - light.upper_deck
+  mode: single
+  max_exceeded: silent
+- id: '1753262270557'
+  alias: Motion - Footpath
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.cameras_front_gate_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+    after_offset: '2:00:00'
+  actions:
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      entity_id: binary_sensor.cameras_top_yard_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+    timeout:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - alias: Wait the number of seconds that has been set
+    delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - type: turn_off
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
+    domain: switch
+  mode: parallel
+  max_exceeded: silent
+  max: 100
+- id: '1753623793587'
+  alias: Bed light off at night if noone home
+  description: ''
+  triggers:
+  - trigger: time
+    at: '22:15:00'
+  conditions:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.kieren
+      zone: zone.home
+    - condition: zone
+      entity_id: person.t
+      zone: zone.home
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.master_bedroom
+  mode: single
+- id: '1758443317725'
+  alias: Bedroom 3 - OFF
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - light.kitchen_1
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  conditions: []
+  actions:
+  - delay:
+      minutes: '{{ range(5, 15)|random|int }}'
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.bedroom_3
+  mode: single
+- id: '1758443516148'
+  alias: Bedroom 3 - OFF Fallback
+  description: ''
+  triggers:
+  - trigger: time
+    at: '23:20:00'
+  conditions: []
+  actions:
+  - delay:
+      minutes: '{{ range(3, 27)|random|int }}'
+  - action: light.turn_off
+    metadata: {}
+    target:
+      entity_id: light.bedroom_3
+    data: {}
+  mode: single
+- id: '1758443691359'
+  alias: Laundry Evening - OFF
+  description: ''
+  triggers:
+  - trigger: time
+    at: '22:30:00'
+  conditions: []
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.laundry_light_socket_1
+  mode: single
+- id: '1760868880917'
+  alias: Upstairs Hallway Lights Off at Night
+  description: ''
+  triggers:
+  - trigger: time
+    at: '22:30:00'
+  conditions: []
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.upstairs_hallway_end
+      - light.upstairs_hallway_linen_cupboard
+  mode: single

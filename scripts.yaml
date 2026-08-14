@@ -1,0 +1,194 @@
+open_all_blinds:
+  alias: Open All Blinds
+  sequence:
+  - action: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.rollerblind_0001
+      - cover.rollerblind_0002
+      - cover.rollerblind_0003
+      - cover.rollerblind_0004
+      - cover.upstairs_1
+      - cover.rollerblind_0006
+      - cover.rollerblind_0007
+      - cover.rollerblind_0008
+  description: Open All Upstairs and Downstairs Blinds
+  icon: mdi:blinds-open
+close_all_blinds:
+  alias: Close All Blinds
+  sequence:
+  - action: cover.close_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.rollerblind_0001
+      - cover.rollerblind_0002
+      - cover.rollerblind_0003
+      - cover.rollerblind_0004
+      - cover.upstairs_1
+      - cover.rollerblind_0006
+      - cover.rollerblind_0007
+      - cover.rollerblind_0008
+  description: Close All Upstairs and Downstairs Blinds
+  icon: mdi:blinds
+stop_all_blinds:
+  alias: Stop All Blinds
+  sequence:
+  - action: cover.stop_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.rollerblind_0001
+      - cover.rollerblind_0002
+      - cover.rollerblind_0004
+      - cover.rollerblind_0003
+      - cover.upstairs_1
+      - cover.rollerblind_0006
+      - cover.rollerblind_0007
+  description: Stop All Blinds Moving
+  icon: mdi:stop
+open_car_doors:
+  sequence:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.caropen
+  alias: Open Car Doors
+  description: ''
+close_car_doors:
+  sequence:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.carclose
+  alias: Close Car Doors
+  description: ''
+open_bike_doors:
+  sequence:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.bikeopen
+  alias: Open Bike Doors
+  description: ''
+close_bike_doors:
+  sequence:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.bikeclose
+  alias: Close Bike Doors
+  description: ''
+carport_door:
+  alias: "Carport Door"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Carport_Door"
+        payload: "ON"
+
+bike_door:
+  alias: "Bike Door"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Bike_Door"
+        payload: "ON"
+
+car_door:
+  alias: "Car Door"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Car_Door"
+        payload: "ON"
+
+carport_gate:
+  alias: "Carport Gate"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Carport_Gate"
+        payload: "ON"
+
+bike_gate:
+  alias: "Bike Gate"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Bike_Gate"
+        payload: "ON"
+
+car_gate:
+  alias: "Car Gate"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "garageremote/Car_Gate"
+        payload: "ON"
+
+car_open:
+  alias: "Car Open"
+  sequence:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.car_garage_socket_1
+    - service: script.car_gate
+    - delay: "00:00:01"
+    - service: script.bike_gate
+    - wait_for_trigger:
+        - platform: state
+          entity_id: switch.car_garage_socket_1
+          to: "on"
+          for: "00:00:02"
+      timeout: "00:00:10"
+      continue_on_timeout: false
+    - service: script.car_door
+
+car_close:
+  alias: "Car Close"
+  sequence:
+    - service: script.car_gate
+    - delay: "00:00:01"
+    - service: script.bike_gate
+    - delay: "00:00:05"
+    - service: script.car_door
+    - delay: "00:02:00"
+    - service: switch.turn_off
+      target:
+        entity_id: switch.car_garage_socket_1
+
+bike_open:
+  alias: "Bike Open"
+  sequence:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.bike_garage_socket_1
+    - service: script.bike_gate
+    - wait_for_trigger:
+        - platform: state
+          entity_id: switch.bike_garage_socket_1
+          to: "on"
+          for: "00:00:02"
+      timeout: "00:00:10"
+      continue_on_timeout: false
+    - service: script.bike_door
+
+bike_close:
+  alias: "Bike Close"
+  sequence:
+    - service: script.bike_gate
+    - delay: "00:00:05"
+    - service: script.bike_door
+    - delay: "00:02:00"
+    - service: switch.turn_off
+      target:
+        entity_id: switch.bike_garage_socket_1

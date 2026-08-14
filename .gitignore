@@ -1,0 +1,6 @@
+secrets.yaml
+*.db
+*.log
+.storage/
+test-e2e/screenshots/
+node_modules/
