@@ -136,11 +136,28 @@ the user to review, but treat it as an artefact for the human, not as a pass/fai
 
 ## Non-negotiable constraints
 
-1. **Only dashboard files may be written to the live mount.** Never write to
-   `/ha-config/configuration.yaml`, `/ha-config/secrets.yaml`, `/ha-config/.storage/`,
-   `/ha-config/automations.yaml`, or any database or log file. If a change appears to require
-   editing `configuration.yaml` (for example registering a new dashboard), STOP and hand the
-   exact YAML to the user to apply themselves.
+1. **Direct edits to live HA config files are allowed, gated by backup-validate-retry-restore.**
+   `configuration.yaml`, `scripts.yaml`, `automations.yaml`, and other live config files on the
+   mount may be edited and deployed directly — `secrets.yaml`, `.storage/`, and any database or
+   log file are still off limits (see constraints 2–4). Before touching any such file:
+   1. **Backup first.** Copy the current version of every file about to be touched to
+      `/projects/ha-config/backups/<filename>-YYYYMMDD-HHMMSS.bak` (same convention as the
+      dashboard backups below) before making any edit.
+   2. **Edit, then validate before reload/restart.** After editing, run `ha core check` (this is
+      a Home Assistant OS/supervised install, so this is the correct command, not the standalone
+      `check_config` script) before triggering any reload or restart that would apply the change
+      live.
+   3. **Retry on failure, up to 3 attempts total.** If validation fails, revise the edit and
+      re-validate — up to 3 attempts total (initial attempt + 2 retries), each informed by the
+      previous attempt's validation output, not blind repetition.
+   4. **Restore and report if still failing after 3 attempts.** Restore the affected file(s) from
+      the timestamped backup, confirm via another `ha core check` that the restored config is
+      valid, and report the failure to the user: what was attempted, why each attempt failed, and
+      the backup path used to restore. Never leave HA in a broken/unvalidated state — restoring
+      last-known-good takes priority over any partial progress.
+   5. **Never reload/restart on unvalidated config.** A passing `ha core check` is a hard gate
+      before any live reload — this is what replaces the old stop-and-hand-back behaviour as the
+      actual safety mechanism.
 2. **Never commit secrets.** `secrets.yaml`, tokens, and the recorder database URL must not enter
    the repo or its history. `.gitignore` must cover `secrets.yaml`, `*.db`, `*.log`,
    `.storage/`, and `test-e2e/screenshots/`.
@@ -158,6 +175,10 @@ primary rollback mechanism; this is a belt-and-braces copy of what was actually 
 which may differ from the repo if it was edited elsewhere.
 
 To revert: `git checkout <commit> -- dashboards/<name>.yaml`, then copy to the mount and reload.
+
+The same `/projects/ha-config/backups/` directory is the backup location for direct edits to
+`configuration.yaml`, `scripts.yaml`, `automations.yaml`, and other live config files under the
+backup-validate-retry-restore process in constraint #1 — see that section for the full procedure.
 
 ## Deploy and verify
 
