@@ -167,9 +167,10 @@ the user to review, but treat it as an artefact for the human, not as a pass/fai
 2. **Never commit secrets.** `secrets.yaml`, tokens, and the recorder database URL must not enter
    the repo or its history. `.gitignore` must cover `secrets.yaml`, `*.db`, `*.log`,
    `.storage/`, and `test-e2e/screenshots/`.
-3. **Never modify the six storage-mode dashboards.** Only Kiosk and WallPanel are YAML-mode;
-   the others (`lovelace`, `dash_blinds`, `dashboard_electricity`, `dashboard_lights`,
-   `energy_cost_comparison`, `map`) remain UI-managed and are off limits.
+3. **Never modify the five storage-mode dashboards.** Only Kiosk and WallPanel are YAML-mode;
+   the others (`lovelace`, `dash_blinds`, `dashboard_electricity`, `dashboard_lights`, `map`)
+   remain UI-managed and are off limits. (`energy_cost_comparison` was deleted on 2026-08-22 with
+   the energy comparison feature, on explicit one-off approval from the user.)
 4. **Never touch `trusted_networks` or any auth configuration.**
 5. **The live dashboard file is only ever written from a green candidate.** No direct edits.
 

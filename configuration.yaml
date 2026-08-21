@@ -32,7 +32,7 @@ frontend:
     - /hacsfiles/stack-in-card/stack-in-card.js?v=1
     - /hacsfiles/lovelace-layout-card/layout-card.js?v=1
     - /hacsfiles/lovelace-wallpanel/wallpanel.js?v=1
-    - /hacsfiles/light-entity-card/null?v=1
+#    - /hacsfiles/light-entity-card/light-entity-card.js?v=1
     - /hacsfiles/slider-button-card/slider-button-card.js?v=1
     - /hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?v=1
     - /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
@@ -40,7 +40,7 @@ frontend:
     - https://cdn.jsdelivr.net/gh/bramkragten/weather-card/dist/weather-card.min.js
 
 lovelace:
-  mode: yaml
+  resource_mode: yaml
   dashboards:
     kiosk-main:
       mode: yaml
@@ -66,53 +66,6 @@ lovelace:
       icon: mdi:tablet-dashboard
       show_in_sidebar: false
       filename: dashboards/wall-candidate.yaml
-
-#http:
-#  # ssl_certificate: /ssl/fullchain.pem
-#  # ssl_key: /ssl/privkey.pem
-#  use_x_forwarded_for: true
-#  trusted_proxies:
-#    - 192.168.0.23
-#    - 192.168.0.10
-#    - 192.168.0.24
-#    - 172.30.33.0/24
-
-#influxdb:
-#    host: a0d7b954-influxdb
-#    port: 8086
-#    database: homeassistant
-#    username: homeassistant
-#    password: homeassistant
-#    max_retries: 3
-#    ssl: false
-#    verify_ssl: false
-#    default_measurement: state
-
-
-#google_assistant:
-#  project_id: homeassistant-ca8e5
-#  service_account: !include SERVICE_ACCOUNT.json
-#  secure_devices_pin: "2626"
-#  report_state: true
-#  expose_by_default: true
-#  entity_config:
-#    script.car_open:
-#      name: "Open Car"
-#      aliases:
-#        - "Open Sesame"
-#    script.car_close:
-#      name: "Close Car"
-#      aliases:
-#        - "Close Sesame"
-#    script.bike_open:
-#      name: "Bike Open"
-#      aliases:
-#        - "Magic Open"
-#    script.bike_close:
-#      name: "Bike Close"
-#      aliases:
-#        - "Magic Close"
-
 
 smartir:
 
@@ -171,24 +124,6 @@ template:
           
           {# 3. Add to the existing total #}
           {{ (this.state | float(0)) + new_kwh }}
-
-  # Sum the three grid energy sensors into a single combined sensor
-  - sensor:
-      - name: "Grid Energy Daily Total"
-        unique_id: grid_energy_daily_total
-        unit_of_measurement: "kWh"
-        device_class: energy
-        state_class: total_increasing
-        icon: mdi:transmission-tower
-        state: >
-          {% set peak = states('sensor.grid_energy_tariff_tracker_peak') | float(0) %}
-          {% set shoulder = states('sensor.grid_energy_tariff_tracker_shoulder') | float(0) %}
-          {% set offpeak = states('sensor.grid_energy_tariff_tracker_off_peak') | float(0) %}
-          {{ (peak + shoulder + offpeak) | round(2) }}
-        availability: >
-          {{ has_value('sensor.grid_energy_tariff_tracker_peak') and
-             has_value('sensor.grid_energy_tariff_tracker_shoulder') and
-             has_value('sensor.grid_energy_tariff_tracker_off_peak') }}
 
   # Make all Arlec smart plugs energy sensors compatible with built-in Energy dashboard
   - sensor:
