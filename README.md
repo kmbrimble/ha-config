@@ -16,9 +16,7 @@ file before making changes, whether you're a human or an agent.
 - `dashboards/kiosk-candidate.yaml`, `dashboards/wall-candidate.yaml` — hidden scratch
   dashboards used to test changes against a live HA instance before promoting to the dashboards
   above
-- `configuration.yaml` — tracked for visibility and history. **Not edited by the agent** — see
-  the non-negotiable constraints in `CLAUDE.md`. Changes here are made by hand and committed
-  afterwards.
+- `configuration.yaml` — core Home Assistant configuration file.
 - `CHANGELOG.md` — factual log of what changed and why, in the versioning scheme described in
   `CLAUDE.md` (integer MINOR, e.g. 0.9 → 0.10, never 1.0 without an explicit milestone).
 

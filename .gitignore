@@ -4,3 +4,4 @@ secrets.yaml
 .storage/
 test-e2e/screenshots/
 node_modules/
+.env
