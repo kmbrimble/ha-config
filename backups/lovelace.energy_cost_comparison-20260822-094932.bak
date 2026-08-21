@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.energy_cost_comparison",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "title": "Energy Providers",
+          "sections": [
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "grid",
+                  "square": false,
+                  "columns": 2,
+                  "cards": [
+                    {
+                      "type": "tile",
+                      "entity": "sensor.cost_alinta_flat",
+                      "name": "Yesterday Actual",
+                      "icon": "mdi:currency-usd",
+                      "color": "blue"
+                    },
+                    {
+                      "type": "tile",
+                      "entity": "sensor.winner_yesterday",
+                      "name": "Yesterday Winner",
+                      "icon": "mdi:trophy-outline",
+                      "color": "gold"
+                    },
+                    {
+                      "type": "tile",
+                      "entity": "sensor.monthly_cost_alinta_flat",
+                      "name": "Month Actual",
+                      "icon": "mdi:calendar-month",
+                      "color": "blue"
+                    },
+                    {
+                      "type": "tile",
+                      "entity": "sensor.best_monthly_saving",
+                      "name": "Best Monthly Saving",
+                      "icon": "mdi:piggy-bank",
+                      "color": "green"
+                    }
+                  ]
+                },
+                {
+                  "type": "entities",
+                  "title": "🔍 Live Debug: Today's Usage (Real-Time)",
+                  "show_header_toggle": false,
+                  "entities": [
+                    {
+                      "type": "section",
+                      "label": "Tariff Tracking"
+                    },
+                    {
+                      "entity": "select.grid_energy_tariff_tracker",
+                      "name": "Currently Active Tariff"
+                    },
+                    {
+                      "entity": "sensor.grid_energy_tariff_tracker_peak",
+                      "name": "Today's Peak Usage"
+                    },
+                    {
+                      "entity": "sensor.grid_energy_tariff_tracker_shoulder",
+                      "name": "Today's Shoulder Usage"
+                    },
+                    {
+                      "entity": "sensor.grid_energy_tariff_tracker_off_peak",
+                      "name": "Today's Off-Peak Usage"
+                    }
+                  ]
+                },
+                {
+                  "type": "markdown",
+                  "content": "### Energy Cost Comparison (Yesterday)\n\n| Provider | Flat Rate | TOU | TOU+Demand |\n|:---|:---:|:---:|:---:|\n{%- set ns = namespace(vals=[]) %}\n{%- set p_list = [\n  {'n': 'AGL Smart Saver', 'f': states('sensor.cost_agl_flat')|float(99), 't': states('sensor.cost_agl_tou')|float(99), 'd': states('sensor.cost_agl_demand')|float(99)},\n  {'n': 'Alinta HomeDeal', 'f': states('sensor.cost_alinta_flat')|float(99), 't': states('sensor.cost_alinta_tou')|float(99), 'd': states('sensor.cost_alinta_demand')|float(99)},\n  {'n': 'GloBird GloSave', 'f': states('sensor.cost_globird_flat')|float(99), 't': states('sensor.cost_globird_tou')|float(99), 'd': states('sensor.cost_globird_demand')|float(99)},\n  {'n': 'Kogan Free FIRST', 'f': states('sensor.cost_kogan_flat')|float(99), 't': states('sensor.cost_kogan_tou')|float(99), 'd': states('sensor.cost_kogan_demand')|float(99)},\n  {'n': 'Lumo Basics', 'f': states('sensor.cost_lumo_flat')|float(99), 't': states('sensor.cost_lumo_tou')|float(99), 'd': states('sensor.cost_lumo_demand')|float(99)},\n  {'n': 'Origin Go Variable', 'f': states('sensor.cost_origin_flat')|float(99), 't': states('sensor.cost_origin_tou')|float(99), 'd': states('sensor.cost_origin_demand')|float(99)},\n  {'n': 'OVO One', 'f': states('sensor.cost_ovo_flat')|float(99), 't': states('sensor.cost_ovo_tou')|float(99), 'd': states('sensor.cost_ovo_demand')|float(99)},\n  {'n': 'Powershop House', 'f': states('sensor.cost_powershop_flat')|float(99), 't': states('sensor.cost_powershop_tou')|float(99), 'd': states('sensor.cost_powershop_demand')|float(99)},\n  {'n': 'Red Energy Living', 'f': states('sensor.cost_red_flat')|float(99), 't': states('sensor.cost_red_tou')|float(99), 'd': states('sensor.cost_red_demand')|float(99)}\n] | sort(attribute='n') -%}\n\n{%- for p in p_list -%}\n  {%- set ns.vals = ns.vals + [p.f, p.t, p.d] -%}\n{%- endfor -%}\n{%- set g_min = ns.vals | select('lt', 99) | min if ns.vals | select('lt', 99) | list | length > 0 else 0 -%}\n\n{%- for p in p_list %}\n| {{ '**' + p.n + '**' if (p.f == g_min or p.t == g_min or p.d == g_min) else p.n }} | {{ '$' + p.f|string if p.f < 99 else 'N/A' }} | {{ '$' + p.t|string if p.t < 99 else 'N/A' }} | {{ '$' + p.d|string if p.d < 99 else 'N/A' }} |\n{%- endfor %}\n\n> **Note:** **Bolded** provider indicates the cheapest option overall based on yesterday's usage."
+                },
+                {
+                  "type": "markdown",
+                  "content": "### Potential Monthly Savings Breakdown\n*Compared to Alinta Flat (Current Plan)*\n\n| Provider & Plan | Daily Charge Saving | Power Cost Saving | Total Saving |\n|:---|:---:|:---:|:---:|\n{%- set days = now().day -%} {%- set base_total = states('sensor.monthly_cost_alinta_flat')|float(0) -%} {%- set base_daily_rate = 1.5585 -%} {%- set base_supply_cost = base_daily_rate * days -%} {%- set base_power_cost = base_total - base_supply_cost -%}\n{%- set plans = [\n  {'n': 'AGL Flat', 's': 'sensor.monthly_cost_agl_flat', 'rate': 1.3171},\n  {'n': 'AGL TOU', 's': 'sensor.monthly_cost_agl_tou', 'rate': 1.35},\n  {'n': 'AGL Demand', 's': 'sensor.monthly_cost_agl_demand', 'rate': 1.35},\n  {'n': 'Alinta TOU', 's': 'sensor.monthly_cost_alinta_tou', 'rate': 1.2935},\n  {'n': 'Alinta Demand', 's': 'sensor.monthly_cost_alinta_demand', 'rate': 1.4098},\n  {'n': 'GloBird Flat', 's': 'sensor.monthly_cost_globird_flat', 'rate': 1.254},\n  {'n': 'GloBird TOU', 's': 'sensor.monthly_cost_globird_tou', 'rate': 1.254},\n  {'n': 'GloBird Demand', 's': 'sensor.monthly_cost_globird_demand', 'rate': 1.452},\n  {'n': 'Kogan Flat', 's': 'sensor.monthly_cost_kogan_flat', 'rate': 1.2271},\n  {'n': 'Kogan TOU', 's': 'sensor.monthly_cost_kogan_tou', 'rate': 1.0846},\n  {'n': 'Kogan Demand', 's': 'sensor.monthly_cost_kogan_demand', 'rate': 1.25},\n  {'n': 'Lumo Flat', 's': 'sensor.monthly_cost_lumo_flat', 'rate': 1.4146},\n  {'n': 'Lumo TOU', 's': 'sensor.monthly_cost_lumo_tou', 'rate': 1.4146},\n  {'n': 'Lumo Demand', 's': 'sensor.monthly_cost_lumo_demand', 'rate': 1.4146},\n  {'n': 'Origin Flat', 's': 'sensor.monthly_cost_origin_flat', 'rate': 1.3573},\n  {'n': 'Origin TOU', 's': 'sensor.monthly_cost_origin_tou', 'rate': 1.1711},\n  {'n': 'Origin Demand', 's': 'sensor.monthly_cost_origin_demand', 'rate': 1.31},\n  {'n': 'OVO Flat', 's': 'sensor.monthly_cost_ovo_flat', 'rate': 1.1550},\n  {'n': 'OVO TOU', 's': 'sensor.monthly_cost_ovo_tou', 'rate': 1.1550},\n  {'n': 'OVO Demand', 's': 'sensor.monthly_cost_ovo_demand', 'rate': 1.1550},\n  {'n': 'Powershop Flat', 's': 'sensor.monthly_cost_powershop_flat', 'rate': 1.2271},\n  {'n': 'Powershop TOU', 's': 'sensor.monthly_cost_powershop_tou', 'rate': 1.31},\n  {'n': 'Powershop Demand', 's': 'sensor.monthly_cost_powershop_demand', 'rate': 1.31},\n  {'n': 'Red Flat', 's': 'sensor.monthly_cost_red_flat', 'rate': 1.33},\n  {'n': 'Red TOU', 's': 'sensor.monthly_cost_red_tou', 'rate': 1.1920},\n  {'n': 'Red Demand', 's': 'sensor.monthly_cost_red_demand', 'rate': 1.1920}\n] -%}\n{%- set ns = namespace(results=[]) -%} {%- for p in plans -%}\n  {%- set p_total = states(p.s)|float(9999) -%}\n  {%- set p_supply_cost = p.rate * days -%}\n  {%- set supply_saving = base_supply_cost - p_supply_cost -%}\n  {%- set p_power_cost = p_total - p_supply_cost -%}\n  {%- set power_saving = base_power_cost - p_power_cost -%}\n  {%- set total_saving = base_total - p_total -%}\n  {%- set ns.results = ns.results + [{\n      'name': p.n,\n      'supply_sav': supply_saving,\n      'power_sav': power_saving,\n      'total_sav': total_saving\n  }] -%}\n{%- endfor -%}\n{%- for row in ns.results | selectattr('total_sav', 'gt', 0) | sort(attribute='total_sav', reverse=true) %}\n| {{ row.name }} | ${{ row.supply_sav|round(2) }} | ${{ row.power_sav|round(2) }} | **${{ row.total_sav|round(2) }}** |\n{%- endfor %}\n| <span style=\"color: #FFD700;\">**Current Plan (Alinta Flat)**</span> | <span style=\"color: #FFD700;\">$0.00</span> | <span style=\"color: #FFD700;\">$0.00</span> | <span style=\"color: #FFD700;\">**$0.00**</span> |\n{%- for row in ns.results | selectattr('total_sav', 'lt', 0) | sort(attribute='total_sav', reverse=true) %}\n| {{ row.name }} | {{ '$' + row.supply_sav|round(2)|string if row.supply_sav > 0 else '-$' + (row.supply_sav|abs)|round(2)|string }} | {{ '$' + row.power_sav|round(2)|string if row.power_sav > 0 else '-$' + (row.power_sav|abs)|round(2)|string }} | <span style=\"color: #FF5252;\">**-${{ (row.total_sav|abs)|round(2) }}**</span> |\n{%- endfor %}\n\n> **Note:** Savings are calculated based on your usage from the 1st of the month to today."
+                },
+                {
+                  "type": "markdown",
+                  "content": "### Previous Month Savings\n*Comparing Finalized Costs*\n\n| Provider & Plan | Daily Charge Saving | Power Cost Saving | Total Saving |\n|:---|:---:|:---:|:---:|\n{%- set days = states('sensor.days_in_previous_month') | int(31) -%} {%- set base_total = states('sensor.previous_month_cost_alinta_flat')|float(0) -%} {%- set base_daily_rate = 1.5585 -%} {%- set base_supply_cost = base_daily_rate * days -%} {%- set base_power_cost = base_total - base_supply_cost -%}\n{%- set plans = [\n  {'n': 'AGL Flat', 's': 'sensor.previous_month_cost_agl_flat', 'rate': 1.3171},\n  {'n': 'AGL TOU', 's': 'sensor.previous_month_cost_agl_tou', 'rate': 1.35},\n  {'n': 'Alinta TOU', 's': 'sensor.previous_month_cost_alinta_tou', 'rate': 1.2935},\n  {'n': 'GloBird Flat', 's': 'sensor.previous_month_cost_globird_flat', 'rate': 1.254},\n  {'n': 'GloBird TOU', 's': 'sensor.previous_month_cost_globird_tou', 'rate': 1.254},\n  {'n': 'Kogan Flat', 's': 'sensor.previous_month_cost_kogan_flat', 'rate': 1.2271},\n  {'n': 'Kogan TOU', 's': 'sensor.previous_month_cost_kogan_tou', 'rate': 1.0846},\n  {'n': 'Lumo Flat', 's': 'sensor.previous_month_cost_lumo_flat', 'rate': 1.4146},\n  {'n': 'Lumo TOU', 's': 'sensor.previous_month_cost_lumo_tou', 'rate': 1.4146},\n  {'n': 'Origin Flat', 's': 'sensor.previous_month_cost_origin_flat', 'rate': 1.3573},\n  {'n': 'Origin TOU', 's': 'sensor.previous_month_cost_origin_tou', 'rate': 1.1711},\n  {'n': 'OVO Flat', 's': 'sensor.previous_month_cost_ovo_flat', 'rate': 1.1550},\n  {'n': 'OVO TOU', 's': 'sensor.previous_month_cost_ovo_tou', 'rate': 1.1550},\n  {'n': 'Powershop Flat', 's': 'sensor.previous_month_cost_powershop_flat', 'rate': 1.2271},\n  {'n': 'Powershop TOU', 's': 'sensor.previous_month_cost_powershop_tou', 'rate': 1.31},\n  {'n': 'Red Flat', 's': 'sensor.previous_month_cost_red_flat', 'rate': 1.33},\n  {'n': 'Red TOU', 's': 'sensor.previous_month_cost_red_tou', 'rate': 1.1920}\n] -%}\n{%- set ns = namespace(results=[]) -%} {%- for p in plans -%}\n  {%- set p_total = states(p.s)|float(9999) -%}\n  {%- set p_supply_cost = p.rate * days -%}\n  {%- set supply_saving = base_supply_cost - p_supply_cost -%}\n  {%- set p_power_cost = p_total - p_supply_cost -%}\n  {%- set power_saving = base_power_cost - p_power_cost -%}\n  {%- set total_saving = base_total - p_total -%}\n  {%- set ns.results = ns.results + [{\n      'name': p.n,\n      'supply_sav': supply_saving,\n      'power_sav': power_saving,\n      'total_sav': total_saving\n  }] -%}\n{%- endfor -%}\n{%- for row in ns.results | selectattr('total_sav', 'gt', 0) | sort(attribute='total_sav', reverse=true) %}\n| {{ row.name }} | ${{ row.supply_sav|round(2) }} | ${{ row.power_sav|round(2) }} | **${{ row.total_sav|round(2) }}** |\n{%- endfor %}\n| <span style=\"color: #FFD700;\">**Last Month (Alinta Flat)**</span> | <span style=\"color: #FFD700;\">$0.00</span> | <span style=\"color: #FFD700;\">$0.00</span> | <span style=\"color: #FFD700;\">**$0.00**</span> |\n{%- for row in ns.results | selectattr('total_sav', 'lt', 0) | sort(attribute='total_sav', reverse=true) %}\n| {{ row.name }} | {{ '$' + row.supply_sav|round(2)|string if row.supply_sav > 0 else '-$' + (row.supply_sav|abs)|round(2)|string }} | {{ '$' + row.power_sav|round(2)|string if row.power_sav > 0 else '-$' + (row.power_sav|abs)|round(2)|string }} | <span style=\"color: #FF5252;\">**-${{ (row.total_sav|abs)|round(2) }}**</span> |\n{%- endfor %}\n> **Note:** \"Demand\" plans are excluded from this history view because historical peak demand data is unavailable."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,774 @@
+# /packages/energy_comparison.yaml
+
+sensor:
+  # ---------------------------------------------------------
+  # STATISTICAL SENSORS (For Peak Demand Calculations)
+  # ---------------------------------------------------------
+  - platform: statistics
+    name: "Max 30m Grid Usage"
+    unique_id: "max_30m_grid_usage_stats"
+    # UPDATED: Points to the raw accumulator.
+    # Calculates the change in kWh over 30 mins to determine Demand.
+    entity_id: sensor.total_grid_energy
+    state_characteristic: change
+    max_age:
+      minutes: 30
+    sampling_size: 100
+
+template:
+  - sensor:
+      # CURRENT MONTH PEAK DEMAND
+      - name: "Current Month Peak Demand"
+        unique_id: "current_month_peak_demand"
+        unit_of_measurement: "kW"
+        state: >
+          {% set demand_window = (16 <= now().hour < 21) %}
+          {% set current_max = this.state | float(0) %}
+          {# usage (kWh) in 30 mins * 2 = kW Demand #}
+          {% set instantaneous_demand = (states('sensor.max_30m_grid_usage') | float(0)) * 2 %}
+          
+          {% if now().day == 1 and now().hour == 0 and now().minute == 0 %} 
+            0
+          {% elif demand_window and instantaneous_demand > current_max %} 
+            {{ instantaneous_demand | round(2) }}
+          {% else %} 
+            {{ current_max }} 
+          {% endif %}
+
+      # ==========================================
+      # DAILY COST SENSORS (2025/26 RATES)
+      # ==========================================
+      
+      # --- ALINTA ---
+      - name: "Cost Alinta Flat"
+        unique_id: "cost_alinta_flat"
+        state: "{{ (1.5585 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3421)) | round(2) }}"
+
+      - name: "Today Energy Cost"
+        unique_id: "sensor.daily_energy_cost"
+        state: "{{ (1.5585 + ((states('sensor.grid_energy_tariff_tracker_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_off_peak')|float(0)) * 0.3421)) | round(2) }}"
+
+      - name: "Cost Alinta TOU"
+        unique_id: "cost_alinta_tou"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {{ (1.2935 + (p*0.4293 + s*0.3106 + o*0.1795)) | round(2) }}
+
+      - name: "Cost Alinta Demand"
+        unique_id: "cost_alinta_demand"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) * 0.2301 %}
+          {{ (1.4098 + (p*0.4632 + s*0.3488 + o*0.2977) + d) | round(2) }}
+
+      # --- ORIGIN ---
+      - name: "Cost Origin Flat"
+        unique_id: "cost_origin_flat"
+        state: "{{ (1.3573 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3349)) | round(2) }}"
+
+      - name: "Cost Origin TOU"
+        unique_id: "cost_origin_tou"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {{ (1.1711 + (p*0.4749 + s*0.3078 + o*0.2685)) | round(2) }}
+
+      - name: "Cost Origin Demand"
+        unique_id: "cost_origin_demand"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) * 0.2237 %}
+          {{ (1.31 + (p*0.44 + s*0.32 + o*0.22) + d) | round(2) }}
+
+      # --- AGL ---
+      - name: "Cost AGL Flat"
+        unique_id: "cost_agl_flat"
+        state: "{{ (1.3171 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3379)) | round(2) }}"
+
+      - name: "Cost AGL TOU"
+        unique_id: "cost_agl_tou"
+        state: "{{ (1.35 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.45 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.31 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.23))) | round(2) }}"
+
+      - name: "Cost AGL Demand"
+        unique_id: "cost_agl_demand"
+        state: "{{ (1.35 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.45 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.33 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.24)) + (states('sensor.current_month_peak_demand')|float(0) * 0.2270)) | round(2) }}"
+
+      # --- GLOBIRD ---
+      - name: "Cost GloBird Flat"
+        unique_id: "cost_globird_flat"
+        state: "{{ (1.254 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3630)) | round(2) }}"
+
+      - name: "Cost GloBird TOU"
+        unique_id: "cost_globird_tou"
+        state: "{{ (1.254 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4368 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.3025 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.2215))) | round(2) }}"
+
+      - name: "Cost GloBird Demand"
+        unique_id: "cost_globird_demand"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) * 0.2301 %}
+          {{ (1.452 + (p*0.4730 + s*0.2959 + o*0.2959) + d) | round(2) }}
+
+      # --- KOGAN ---
+      - name: "Cost Kogan Flat"
+        unique_id: "cost_kogan_flat"
+        state: "{{ (1.2271 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.2898)) | round(2) }}"
+
+      - name: "Cost Kogan TOU"
+        unique_id: "cost_kogan_tou"
+        state: "{{ (1.0846 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4368 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.2717 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.2717))) | round(2) }}"
+
+      - name: "Cost Kogan Demand"
+        unique_id: "cost_kogan_demand"
+        state: >
+          {% set p = state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) %}
+          {% set s = state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) %}
+          {% set o = state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) * 0.2270 %}
+          {{ (1.25 + (p*0.4368 + s*0.2717 + o*0.2717) + d) | round(2) }}
+
+      # --- OVO ---
+      - name: "Cost OVO Flat"
+        unique_id: "cost_ovo_flat"
+        state: "{{ (1.1550 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3047)) | round(2) }}"
+
+      - name: "Cost OVO TOU"
+        unique_id: "cost_ovo_tou"
+        state: "{{ (1.1550 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4132 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.3047 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.2104))) | round(2) }}"
+
+      - name: "Cost OVO Demand"
+        unique_id: "cost_ovo_demand"
+        state: "{{ (1.1550 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.41 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.30 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.20)) + (states('sensor.current_month_peak_demand')|float(0) * 0.2270)) | round(2) }}"
+
+      # --- LUMO ---
+      - name: "Cost Lumo Flat"
+        unique_id: "cost_lumo_flat"
+        state: "{{ (1.4146 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3536)) | round(2) }}"
+
+      - name: "Cost Lumo TOU"
+        unique_id: "cost_lumo_tou"
+        state: "{{ (1.4146 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4620 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.3150 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.2640))) | round(2) }}"
+
+      - name: "Cost Lumo Demand"
+        unique_id: "cost_lumo_demand"
+        state: "{{ (1.4146 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.44 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.32 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.23)) + (states('sensor.current_month_peak_demand')|float(0) * 0.2237)) | round(2) }}"
+
+      # --- POWERSHOP ---
+      - name: "Cost Powershop Flat"
+        unique_id: "cost_powershop_flat"
+        state: "{{ (1.2271 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.3006)) | round(2) }}"
+
+      - name: "Cost Powershop TOU"
+        unique_id: "cost_powershop_tou"
+        state: "{{ (1.31 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4950 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.4510 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.3465))) | round(2) }}"
+
+      - name: "Cost Powershop Demand"
+        unique_id: "cost_powershop_demand"
+        state: "{{ (1.31 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4950 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.4510 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.3465)) + (states('sensor.current_month_peak_demand')|float(0) * 0.2270)) | round(2) }}"
+
+      # --- RED ENERGY ---
+      - name: "Cost Red Flat"
+        unique_id: "cost_red_flat"
+        state: "{{ (1.33 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0) + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)) * 0.34)) | round(2) }}"
+
+      - name: "Cost Red TOU"
+        unique_id: "cost_red_tou"
+        state: "{{ (1.1920 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.4435 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.3210 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.2055))) | round(2) }}"
+
+      - name: "Cost Red Demand"
+        unique_id: "cost_red_demand"
+        state: "{{ (1.1920 + ((state_attr('sensor.grid_energy_tariff_tracker_peak', 'last_period')|float(0)*0.45 + state_attr('sensor.grid_energy_tariff_tracker_shoulder', 'last_period')|float(0)*0.33 + state_attr('sensor.grid_energy_tariff_tracker_off_peak', 'last_period')|float(0)*0.24)) + (states('sensor.current_month_peak_demand')|float(0) * 0.2270)) | round(2) }}"
+
+      # ==========================================
+      # MONTHLY COST SENSORS
+      # ==========================================
+
+      # --- ALINTA MONTHLY ---
+      - name: "Monthly Cost Alinta Flat"
+        unique_id: "monthly_cost_alinta_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.5585 * now().day) + (mu * 0.3421)) | round(2) }}
+
+      - name: "Monthly Cost Alinta TOU"
+        unique_id: "monthly_cost_alinta_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.2935 * now().day) + (mp*0.4293 + ms*0.3106 + mo*0.1795)) | round(2) }}
+
+      - name: "Monthly Cost Alinta Demand"
+        unique_id: "monthly_cost_alinta_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.4098 * now().day) + (mp*0.4632 + ms*0.3488 + mo*0.2977) + (d * 0.2301 * now().day)) | round(2) }}
+
+      # --- AGL MONTHLY ---
+      - name: "Monthly Cost AGL Flat"
+        unique_id: "monthly_cost_agl_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.3171 * now().day) + (mu * 0.3379)) | round(2) }}
+
+      - name: "Monthly Cost AGL TOU"
+        unique_id: "monthly_cost_agl_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.35 * now().day) + (mp*0.45 + ms*0.31 + mo*0.23)) | round(2) }}
+
+      - name: "Monthly Cost AGL Demand"
+        unique_id: "monthly_cost_agl_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.35 * now().day) + (mp*0.45 + ms*0.33 + mo*0.24) + (d * 0.2270 * now().day)) | round(2) }}
+
+      # --- GLOBIRD MONTHLY ---
+      - name: "Monthly Cost GloBird Flat"
+        unique_id: "monthly_cost_globird_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.254 * now().day) + (mu * 0.3630)) | round(2) }}
+
+      - name: "Monthly Cost GloBird TOU"
+        unique_id: "monthly_cost_globird_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.254 * now().day) + (mp*0.4368 + ms*0.3025 + mo*0.2215)) | round(2) }}
+
+      - name: "Monthly Cost GloBird Demand"
+        unique_id: "monthly_cost_globird_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.452 * now().day) + (mp*0.4730 + ms*0.2959 + mo*0.2959) + (d * 0.2301 * now().day)) | round(2) }}
+
+      # --- KOGAN MONTHLY ---
+      - name: "Monthly Cost Kogan Flat"
+        unique_id: "monthly_cost_kogan_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.2271 * now().day) + (mu * 0.2898)) | round(2) }}
+
+      - name: "Monthly Cost Kogan TOU"
+        unique_id: "monthly_cost_kogan_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.0846 * now().day) + (mp*0.4368 + ms*0.2717 + mo*0.2717)) | round(2) }}
+
+      - name: "Monthly Cost Kogan Demand"
+        unique_id: "monthly_cost_kogan_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.25 * now().day) + (mp*0.4368 + ms*0.2717 + mo*0.2717) + (d * 0.2270 * now().day)) | round(2) }}
+
+      # --- LUMO MONTHLY ---
+      - name: "Monthly Cost Lumo Flat"
+        unique_id: "monthly_cost_lumo_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.4146 * now().day) + (mu * 0.3536)) | round(2) }}
+
+      - name: "Monthly Cost Lumo TOU"
+        unique_id: "monthly_cost_lumo_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.4146 * now().day) + (mp*0.4620 + ms*0.3150 + mo*0.2640)) | round(2) }}
+
+      - name: "Monthly Cost Lumo Demand"
+        unique_id: "monthly_cost_lumo_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.4146 * now().day) + (mp*0.44 + ms*0.32 + mo*0.23) + (d * 0.2237 * now().day)) | round(2) }}
+
+      # --- ORIGIN MONTHLY ---
+      - name: "Monthly Cost Origin Flat"
+        unique_id: "monthly_cost_origin_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.3573 * now().day) + (mu * 0.3349)) | round(2) }}
+
+      - name: "Monthly Cost Origin TOU"
+        unique_id: "monthly_cost_origin_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.1711 * now().day) + (mp*0.4749 + ms*0.3078 + mo*0.2685)) | round(2) }}
+
+      - name: "Monthly Cost Origin Demand"
+        unique_id: "monthly_cost_origin_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.31 * now().day) + (mp*0.44 + ms*0.32 + mo*0.22) + (d * 0.2237 * now().day)) | round(2) }}
+
+      # --- OVO MONTHLY ---
+      - name: "Monthly Cost OVO Flat"
+        unique_id: "monthly_cost_ovo_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.1550 * now().day) + (mu * 0.3047)) | round(2) }}
+
+      - name: "Monthly Cost OVO TOU"
+        unique_id: "monthly_cost_ovo_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.1550 * now().day) + (mp*0.4132 + ms*0.3047 + mo*0.2104)) | round(2) }}
+
+      - name: "Monthly Cost OVO Demand"
+        unique_id: "monthly_cost_ovo_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.1550 * now().day) + (mp*0.41 + ms*0.30 + mo*0.20) + (d * 0.2270 * now().day)) | round(2) }}
+
+      # --- POWERSHOP MONTHLY ---
+      - name: "Monthly Cost Powershop Flat"
+        unique_id: "monthly_cost_powershop_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.2271 * now().day) + (mu * 0.3006)) | round(2) }}
+
+      - name: "Monthly Cost Powershop TOU"
+        unique_id: "monthly_cost_powershop_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.31 * now().day) + (mp*0.4950 + ms*0.4510 + mo*0.3465)) | round(2) }}
+
+      - name: "Monthly Cost Powershop Demand"
+        unique_id: "monthly_cost_powershop_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.31 * now().day) + (mp*0.4950 + ms*0.4510 + mo*0.3465) + (d * 0.2270 * now().day)) | round(2) }}
+
+      # --- RED ENERGY MONTHLY ---
+      - name: "Monthly Cost Red Flat"
+        unique_id: "monthly_cost_red_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set mu = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) + states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.33 * now().day) + (mu * 0.34)) | round(2) }}
+
+      - name: "Monthly Cost Red TOU"
+        unique_id: "monthly_cost_red_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {{ ((1.1920 * now().day) + (mp*0.4435 + ms*0.3210 + mo*0.2055)) | round(2) }}
+
+      - name: "Monthly Cost Red Demand"
+        unique_id: "monthly_cost_red_demand"
+        unit_of_measurement: "$"
+        state: >
+          {% set mp = states('sensor.grid_energy_tariff_tracker_monthly_peak')|float(0) %}
+          {% set ms = states('sensor.grid_energy_tariff_tracker_monthly_shoulder')|float(0) %}
+          {% set mo = states('sensor.grid_energy_tariff_tracker_monthly_off_peak')|float(0) %}
+          {% set d = states('sensor.current_month_peak_demand')|float(0) %}
+          {{ ((1.1920 * now().day) + (mp*0.45 + ms*0.33 + mo*0.24) + (d * 0.2270 * now().day)) | round(2) }}
+
+      # ==========================================
+      # DASHBOARD SUMMARY SENSORS (WINNERS)
+      # ==========================================
+
+      - name: "Winner Yesterday"
+        unique_id: "winner_yesterday"
+        icon: mdi:trophy-outline
+        state: >
+          {% set p_list = [
+            {'n': 'AGL Flat', 'v': states('sensor.cost_agl_flat')|float(999)},
+            {'n': 'AGL TOU', 'v': states('sensor.cost_agl_tou')|float(999)},
+            {'n': 'AGL Dem', 'v': states('sensor.cost_agl_demand')|float(999)},
+            {'n': 'Alinta Flat', 'v': states('sensor.cost_alinta_flat')|float(999)},
+            {'n': 'Alinta TOU', 'v': states('sensor.cost_alinta_tou')|float(999)},
+            {'n': 'Alinta Dem', 'v': states('sensor.cost_alinta_demand')|float(999)},
+            {'n': 'GloBird Flat', 'v': states('sensor.cost_globird_flat')|float(999)},
+            {'n': 'GloBird TOU', 'v': states('sensor.cost_globird_tou')|float(999)},
+            {'n': 'GloBird Dem', 'v': states('sensor.cost_globird_demand')|float(999)},
+            {'n': 'Kogan Flat', 'v': states('sensor.cost_kogan_flat')|float(999)},
+            {'n': 'Kogan TOU', 'v': states('sensor.cost_kogan_tou')|float(999)},
+            {'n': 'Kogan Dem', 'v': states('sensor.cost_kogan_demand')|float(999)},
+            {'n': 'Lumo Flat', 'v': states('sensor.cost_lumo_flat')|float(999)},
+            {'n': 'Lumo TOU', 'v': states('sensor.cost_lumo_tou')|float(999)},
+            {'n': 'Lumo Dem', 'v': states('sensor.cost_lumo_demand')|float(999)},
+            {'n': 'Origin Flat', 'v': states('sensor.cost_origin_flat')|float(999)},
+            {'n': 'Origin TOU', 'v': states('sensor.cost_origin_tou')|float(999)},
+            {'n': 'Origin Dem', 'v': states('sensor.cost_origin_demand')|float(999)},
+            {'n': 'OVO Flat', 'v': states('sensor.cost_ovo_flat')|float(999)},
+            {'n': 'OVO TOU', 'v': states('sensor.cost_ovo_tou')|float(999)},
+            {'n': 'OVO Dem', 'v': states('sensor.cost_ovo_demand')|float(999)},
+            {'n': 'Powershop Flat', 'v': states('sensor.cost_powershop_flat')|float(999)},
+            {'n': 'Powershop TOU', 'v': states('sensor.cost_powershop_tou')|float(999)},
+            {'n': 'Powershop Dem', 'v': states('sensor.cost_powershop_demand')|float(999)},
+            {'n': 'Red Flat', 'v': states('sensor.cost_red_flat')|float(999)},
+            {'n': 'Red TOU', 'v': states('sensor.cost_red_tou')|float(999)},
+            {'n': 'Red Dem', 'v': states('sensor.cost_red_demand')|float(999)}
+          ] %}
+          {% set winner = p_list | selectattr('v', 'gt', 0) | sort(attribute='v') | first %}
+          {{ winner.n if winner else 'Unknown' }} (${{ winner.v if winner else '0' }})
+
+      - name: "Best Monthly Saving"
+        unique_id: "best_monthly_saving"
+        icon: mdi:piggy-bank-outline
+        state: >
+          {% set baseline = states('sensor.monthly_cost_alinta_flat') | float(0) %}
+          {% set p_list = [
+            {'n': 'AGL Flat', 'v': states('sensor.monthly_cost_agl_flat')|float(999)},
+            {'n': 'AGL TOU', 'v': states('sensor.monthly_cost_agl_tou')|float(999)},
+            {'n': 'AGL Dem', 'v': states('sensor.monthly_cost_agl_demand')|float(999)},
+            {'n': 'Alinta TOU', 'v': states('sensor.monthly_cost_alinta_tou')|float(999)},
+            {'n': 'Alinta Dem', 'v': states('sensor.monthly_cost_alinta_demand')|float(999)},
+            {'n': 'GloBird Flat', 'v': states('sensor.monthly_cost_globird_flat')|float(999)},
+            {'n': 'GloBird TOU', 'v': states('sensor.monthly_cost_globird_tou')|float(999)},
+            {'n': 'GloBird Dem', 'v': states('sensor.monthly_cost_globird_demand')|float(999)},
+            {'n': 'Kogan Flat', 'v': states('sensor.monthly_cost_kogan_flat')|float(999)},
+            {'n': 'Kogan TOU', 'v': states('sensor.monthly_cost_kogan_tou')|float(999)},
+            {'n': 'Kogan Dem', 'v': states('sensor.monthly_cost_kogan_demand')|float(999)},
+            {'n': 'Lumo Flat', 'v': states('sensor.monthly_cost_lumo_flat')|float(999)},
+            {'n': 'Lumo TOU', 'v': states('sensor.monthly_cost_lumo_tou')|float(999)},
+            {'n': 'Lumo Dem', 'v': states('sensor.monthly_cost_lumo_demand')|float(999)},
+            {'n': 'Origin Flat', 'v': states('sensor.monthly_cost_origin_flat')|float(999)},
+            {'n': 'Origin TOU', 'v': states('sensor.monthly_cost_origin_tou')|float(999)},
+            {'n': 'Origin Dem', 'v': states('sensor.monthly_cost_origin_demand')|float(999)},
+            {'n': 'OVO Flat', 'v': states('sensor.monthly_cost_ovo_flat')|float(999)},
+            {'n': 'OVO TOU', 'v': states('sensor.monthly_cost_ovo_tou')|float(999)},
+            {'n': 'OVO Dem', 'v': states('sensor.monthly_cost_ovo_demand')|float(999)},
+            {'n': 'Powershop Flat', 'v': states('sensor.monthly_cost_powershop_flat')|float(999)},
+            {'n': 'Powershop TOU', 'v': states('sensor.monthly_cost_powershop_tou')|float(999)},
+            {'n': 'Powershop Dem', 'v': states('sensor.monthly_cost_powershop_demand')|float(999)},
+            {'n': 'Red Flat', 'v': states('sensor.monthly_cost_red_flat')|float(999)},
+            {'n': 'Red TOU', 'v': states('sensor.monthly_cost_red_tou')|float(999)},
+            {'n': 'Red Dem', 'v': states('sensor.monthly_cost_red_demand')|float(999)}
+          ] %}
+          {% set best = p_list | selectattr('v', 'gt', 0) | sort(attribute='v') | first %}
+          {% if best and baseline > 0 %}
+            {% set savings = (baseline - best.v) | round(2) %}
+            {{ best.n }} (${{ savings }})
+          {% else %}
+            Calculating...
+          {% endif %}
+
+# ==========================================
+  # PREVIOUS MONTH SENSORS (Historical Data)
+  # ==========================================
+
+      # 1. Helper: Days in previous month (for accurate supply charge)
+      - name: "Days in Previous Month"
+        unique_id: "days_in_previous_month_calc"
+        state: "{{ (now().replace(day=1) - timedelta(days=1)).day }}"
+
+      # 2. Previous Month Costs (Using 'last_period' attributes)
+      
+      # --- ALINTA ---
+      - name: "Previous Month Cost Alinta Flat"
+        unique_id: "prev_month_cost_alinta_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.5585 * days) + (mu * 0.3421)) | round(2) }}
+
+      - name: "Previous Month Cost Alinta TOU"
+        unique_id: "prev_month_cost_alinta_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.2935 * days) + (mp*0.4293 + ms*0.3106 + mo*0.1795)) | round(2) }}
+
+      # --- AGL ---
+      - name: "Previous Month Cost AGL Flat"
+        unique_id: "prev_month_cost_agl_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.3171 * days) + (mu * 0.3379)) | round(2) }}
+
+      - name: "Previous Month Cost AGL TOU"
+        unique_id: "prev_month_cost_agl_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.35 * days) + (mp*0.45 + ms*0.31 + mo*0.23)) | round(2) }}
+
+      # --- GLOBIRD ---
+      - name: "Previous Month Cost GloBird Flat"
+        unique_id: "prev_month_cost_globird_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.254 * days) + (mu * 0.3630)) | round(2) }}
+
+      - name: "Previous Month Cost GloBird TOU"
+        unique_id: "prev_month_cost_globird_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.254 * days) + (mp*0.4368 + ms*0.3025 + mo*0.2215)) | round(2) }}
+
+      # --- KOGAN ---
+      - name: "Previous Month Cost Kogan Flat"
+        unique_id: "prev_month_cost_kogan_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.2271 * days) + (mu * 0.2898)) | round(2) }}
+
+      - name: "Previous Month Cost Kogan TOU"
+        unique_id: "prev_month_cost_kogan_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.0846 * days) + (mp*0.4368 + ms*0.2717 + mo*0.2717)) | round(2) }}
+
+      # --- LUMO ---
+      - name: "Previous Month Cost Lumo Flat"
+        unique_id: "prev_month_cost_lumo_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.4146 * days) + (mu * 0.3536)) | round(2) }}
+
+      - name: "Previous Month Cost Lumo TOU"
+        unique_id: "prev_month_cost_lumo_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.4146 * days) + (mp*0.4620 + ms*0.3150 + mo*0.2640)) | round(2) }}
+
+      # --- ORIGIN ---
+      - name: "Previous Month Cost Origin Flat"
+        unique_id: "prev_month_cost_origin_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.3573 * days) + (mu * 0.3349)) | round(2) }}
+
+      - name: "Previous Month Cost Origin TOU"
+        unique_id: "prev_month_cost_origin_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.1711 * days) + (mp*0.4749 + ms*0.3078 + mo*0.2685)) | round(2) }}
+
+      # --- OVO ---
+      - name: "Previous Month Cost OVO Flat"
+        unique_id: "prev_month_cost_ovo_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.1550 * days) + (mu * 0.3047)) | round(2) }}
+
+      - name: "Previous Month Cost OVO TOU"
+        unique_id: "prev_month_cost_ovo_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.1550 * days) + (mp*0.4132 + ms*0.3047 + mo*0.2104)) | round(2) }}
+
+      # --- POWERSHOP ---
+      - name: "Previous Month Cost Powershop Flat"
+        unique_id: "prev_month_cost_powershop_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.2271 * days) + (mu * 0.3006)) | round(2) }}
+
+      - name: "Previous Month Cost Powershop TOU"
+        unique_id: "prev_month_cost_powershop_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.31 * days) + (mp*0.4950 + ms*0.4510 + mo*0.3465)) | round(2) }}
+
+      # --- RED ENERGY ---
+      - name: "Previous Month Cost Red Flat"
+        unique_id: "prev_month_cost_red_flat"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mu = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) + 
+                      state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.33 * days) + (mu * 0.34)) | round(2) }}
+
+      - name: "Previous Month Cost Red TOU"
+        unique_id: "prev_month_cost_red_tou"
+        unit_of_measurement: "$"
+        state: >
+          {% set days = states('sensor.days_in_previous_month')|int(30) %}
+          {% set mp = state_attr('sensor.grid_energy_tariff_tracker_monthly_peak', 'last_period')|float(0) %}
+          {% set ms = state_attr('sensor.grid_energy_tariff_tracker_monthly_shoulder', 'last_period')|float(0) %}
+          {% set mo = state_attr('sensor.grid_energy_tariff_tracker_monthly_off_peak', 'last_period')|float(0) %}
+          {{ ((1.1920 * days) + (mp*0.4435 + ms*0.3210 + mo*0.2055)) | round(2) }}
+
+
+utility_meter:
+  grid_energy_tariff_tracker:
+    unique_id: "grid_energy_tariff_tracker_select"
+    name: "Grid Energy Tariff Tracker"
+    # UPDATED: Points to the accumulator
+    source: sensor.total_grid_energy
+    cycle: daily
+    tariffs:
+      - peak
+      - shoulder
+      - off_peak
+
+  grid_energy_tariff_tracker_monthly:
+    unique_id: "grid_energy_tariff_tracker_monthly_meter"
+    name: "Monthly Grid Energy Tracker"
+    # UPDATED: Points to the accumulator
+    source: sensor.total_grid_energy
+    cycle: monthly
+    tariffs:
+      - peak
+      - shoulder
+      - off_peak
+
+automation:
+  - alias: "Energy Tariff Switcher"
+    id: "energy_tariff_switcher_auto"
+    initial_state: true
+    trigger:
+      - platform: time
+        at: ["11:00:00", "16:00:00", "21:00:00"]
+      - platform: homeassistant
+        event: start
+    action:
+      # 1. Determine the current tariff based on Time of Day
+      - variables:
+          current_tariff: >
+            {% set h = now().hour %}
+            {% if 11 <= h < 16 %} off_peak
+            {% elif 16 <= h < 21 %} peak
+            {% else %} shoulder
+            {% endif %}
+      
+      # 2. Apply to Daily Tracker
+      - service: select.select_option
+        target:
+          entity_id: select.grid_energy_tariff_tracker
+        data:
+          option: "{{ current_tariff }}"
+          
+      # 3. Apply to Monthly Tracker
+      - service: select.select_option
+        target:
+          entity_id: select.grid_energy_tariff_tracker_monthly
+        data:
+          option: "{{ current_tariff }}"

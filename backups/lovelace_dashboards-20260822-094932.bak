@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace_dashboards",
+  "data": {
+    "items": [
+      {
+        "id": "dashboard_lights",
+        "show_in_sidebar": true,
+        "icon": "mdi:home-lightbulb-outline",
+        "title": "Lights",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "dashboard-lights"
+      },
+      {
+        "id": "map",
+        "icon": "mdi:map",
+        "title": "Map",
+        "url_path": "map",
+        "require_admin": false,
+        "mode": "storage",
+        "show_in_sidebar": false
+      },
+      {
+        "id": "dash_blinds",
+        "show_in_sidebar": true,
+        "icon": "mdi:blinds",
+        "title": "Blinds",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "dash-blinds"
+      },
+      {
+        "id": "energy_cost_comparison",
+        "show_in_sidebar": true,
+        "icon": "mdi:currency-usd",
+        "title": "Energy Cost Comparison",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "energy-cost-comparison"
+      },
+      {
+        "id": "dashboard_electricity",
+        "show_in_sidebar": true,
+        "icon": "mdi:home-lightning-bolt",
+        "title": "Electricity",
+        "require_admin": false,
+        "mode": "storage",
+        "url_path": "dashboard-electricity"
+      },
+      {
+        "id": "lovelace",
+        "icon": "mdi:view-dashboard",
+        "title": "Overview",
+        "url_path": "lovelace",
+        "show_in_sidebar": true,
+        "mode": "storage",
+        "require_admin": false
+      }
+    ]
+  }
+}
