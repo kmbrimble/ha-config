@@ -89,8 +89,11 @@ HA requires authentication. Do **not** add the unRAID host IP (`192.168.0.10`) t
 `trusted_networks` — the agent container is NAT'd behind the host, so that would grant bypass
 login to every container on the server.
 
-Instead, inject a long-lived access token into `localStorage` before page load. The token is
-supplied via the `HA_TOKEN` environment variable and must never be committed.
+Instead, inject a long-lived access token into `localStorage` before page load. The token lives
+in `/projects/ha-config/.env` as `HA_TOKEN` (already gitignored) and is supplied via that
+environment variable — it must never be committed, and never be printed to the console/output
+(e.g. via `cat`, `echo`, `env`, or a debug print) even for verification. To check it's present
+without exposing it: `grep -q '^HA_TOKEN=' .env && echo found`.
 
 ```js
 await page.addInitScript((token) => {
@@ -143,19 +146,22 @@ the user to review, but treat it as an artefact for the human, not as a pass/fai
    1. **Backup first.** Copy the current version of every file about to be touched to
       `/projects/ha-config/backups/<filename>-YYYYMMDD-HHMMSS.bak` (same convention as the
       dashboard backups below) before making any edit.
-   2. **Edit, then validate before reload/restart.** After editing, run `ha core check` (this is
-      a Home Assistant OS/supervised install, so this is the correct command, not the standalone
-      `check_config` script) before triggering any reload or restart that would apply the change
-      live.
+   2. **Edit, then validate before reload/restart.** After editing, validate before triggering any
+      reload or restart that would apply the change live. **`ha core check` is not reachable from
+      this container** — no Supervisor CLI or SSH access to the HA host is configured here (confirmed
+      2026-08-21). Use the REST config-check endpoint instead, with the token from `.env`:
+      `curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/config/core/check_config`
+      — a `{"result":"valid",...}` response is the pass condition. If a future session finds `ha`
+      or SSH available, prefer it and update this note.
    3. **Retry on failure, up to 3 attempts total.** If validation fails, revise the edit and
       re-validate — up to 3 attempts total (initial attempt + 2 retries), each informed by the
       previous attempt's validation output, not blind repetition.
    4. **Restore and report if still failing after 3 attempts.** Restore the affected file(s) from
-      the timestamped backup, confirm via another `ha core check` that the restored config is
-      valid, and report the failure to the user: what was attempted, why each attempt failed, and
+      the timestamped backup, confirm via another config-check (see above) that the restored
+      config is valid, and report the failure to the user: what was attempted, why each attempt failed, and
       the backup path used to restore. Never leave HA in a broken/unvalidated state — restoring
       last-known-good takes priority over any partial progress.
-   5. **Never reload/restart on unvalidated config.** A passing `ha core check` is a hard gate
+   5. **Never reload/restart on unvalidated config.** A passing config-check is a hard gate
       before any live reload — this is what replaces the old stop-and-hand-back behaviour as the
       actual safety mechanism.
 2. **Never commit secrets.** `secrets.yaml`, tokens, and the recorder database URL must not enter
