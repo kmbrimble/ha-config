@@ -234,13 +234,6 @@ template:
         device_class: energy
         state_class: total_increasing
 
-      - name: "Office Energy"
-        unique_id: office_energy_fixed
-        state: "{{ states('sensor.office_total_energy') }}"
-        unit_of_measurement: "kWh"
-        device_class: energy
-        state_class: total_increasing
-
       - name: "TV Lounge Energy"
         unique_id: tv_lounge_energy_fixed
         state: "{{ states('sensor.tv_lounge_total_energy') }}"
