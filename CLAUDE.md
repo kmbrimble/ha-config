@@ -235,3 +235,18 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   authenticates via `trusted_networks` on `192.168.0.16` with `allow_bypass_login`. This is why
   the live Kiosk dashboard must never be left in a broken state — there is no login screen to
   interrupt a bad load.
+
+## Reading the HA error log
+
+**Since HA Core 2025.11, the plaintext log is no longer written to `/config`.** The files on the
+mount (`home-assistant.log.1`, `.old`) stop dead at 7 Nov 2025 — that's when this install crossed
+the 2025.11 boundary — and nothing has landed there since. Don't trust their contents as current.
+
+To see current errors/warnings:
+- **In the UI:** Settings → System → Logs → Home Assistant Core, then enable "Show Raw Log file"
+  for the old plaintext view, or just read the structured log list.
+- **Programmatically:** the REST `/api/error_log` endpoint is also gone. Use the **websocket API**
+  instead — send `{"type": "system_log/list"}` over `ws://<host>:8123/api/websocket` after
+  authenticating. This returns deduplicated JSON entries (name, level, message, count,
+  first_occurred, timestamp, exception) — the same data source as the UI's Logs page. A
+  long-lived access token (same as `HA_TOKEN` used for Playwright tests) is needed either way.
