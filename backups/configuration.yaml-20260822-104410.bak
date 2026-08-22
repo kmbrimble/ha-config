@@ -25,44 +25,21 @@ scene: !include scenes.yaml
 
 frontend:
   themes: !include_dir_merge_named themes
-  # extra_module_url is FIRE-AND-FORGET — HA does not await these before rendering a dashboard.
-  # Only modules that are not custom cards belong here: they patch the frontend itself and are
-  # not referenced by a card's `type:`, so losing a race just delays their effect rather than
-  # failing a card. Custom CARDS must go under `lovelace: resources:` below.
   extra_module_url:
     - /hacsfiles/kiosk-mode/kiosk-mode.js?v=1
-    # card-mod stays HERE, not under `lovelace: resources:`. It is a global frontend patch like
-    # kiosk-mode, not a card type. Moving it to resources on 2026-08-22 left the Kiosk layout
-    # bistable — scrollWidth 3456 (overflowing the 3440 display) on some loads and a wrong
-    # 1141px first card on others. Reverted; do not move it again.
     - /hacsfiles/lovelace-card-mod/card-mod.js?v=1
+    - /hacsfiles/button-card/button-card.js?v=1
+    - /hacsfiles/stack-in-card/stack-in-card.js?v=1
+    - /hacsfiles/lovelace-layout-card/layout-card.js?v=1
     - /hacsfiles/lovelace-wallpanel/wallpanel.js?v=1
+#    - /hacsfiles/light-entity-card/light-entity-card.js?v=1
+    - /hacsfiles/slider-button-card/slider-button-card.js?v=1
+    - /hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?v=1
+    - /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
+    - /hacsfiles/weather-radar-card/weather-radar-card.js?v=1
 
 lovelace:
   resource_mode: yaml
-  # Custom card modules. HA loads these before building a dashboard, so a card's `type:` is
-  # guaranteed to be registered by the time the view renders.
-  #
-  # These were previously in extra_module_url only, which is not awaited. That raced: on roughly
-  # half of loads the Wall dashboard's 34 custom:button-card cards rendered "Configuration error"
-  # because button-card had not registered yet. It was masked until 2026-08-22 by a slow
-  # cdn.jsdelivr.net fetch in extra_module_url that happened to delay rendering; removing that
-  # dead resource exposed the race.
-  resources:
-    - url: /hacsfiles/button-card/button-card.js?v=1
-      type: module
-    - url: /hacsfiles/stack-in-card/stack-in-card.js?v=1
-      type: module
-    - url: /hacsfiles/lovelace-layout-card/layout-card.js?v=1
-      type: module
-    - url: /hacsfiles/slider-button-card/slider-button-card.js?v=1
-      type: module
-    - url: /hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?v=1
-      type: module
-    - url: /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
-      type: module
-    - url: /hacsfiles/weather-radar-card/weather-radar-card.js?v=1
-      type: module
   dashboards:
     kiosk-main:
       mode: yaml

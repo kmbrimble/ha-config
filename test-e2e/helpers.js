@@ -94,25 +94,44 @@ async function openDashboard(page, urlPath) {
     );
   }
 
-  // Custom cards from HACS register late, so wait for the card count to stop changing rather
-  // than guessing at a fixed sleep. A dashboard that renders zero cards never settles here and
-  // times out — which is the correct outcome, because zero cards is a broken dashboard.
-  let previous = -1;
+  // Settle on the full card GEOMETRY, not just the card count.
+  //
+  // Two separate things arrive late and both have burned this suite: HACS card modules register
+  // after the view starts building (card count climbs), and card-mod applies its styles after
+  // that (count is already final, but every card then reflows). Waiting on the count alone
+  // returns while the page is still at its unstyled geometry — the kiosk cards measure 16px to
+  // the right and falsely report horizontal overflow.
+  //
+  // Settling on the same signature the tests go on to assert means the wait cannot be satisfied
+  // by a state the assertions would reject. Require several consecutive identical readings: the
+  // Wall dashboard builds its 39 cards in stages and pauses long enough mid-render that a
+  // two-poll check settles on a plateau.
+  const STABLE_POLLS = 4;
+  const POLL_MS = 500;
   await page
     .waitForFunction(
-      ([deepQuery, prev]) => {
-        const n = eval(deepQuery)('ha-card').length;
-        const settled = n > 0 && n === window.__cardCount;
-        window.__cardCount = n;
-        return settled;
+      ([deepQuery, needed]) => {
+        const els = eval(deepQuery)('ha-card');
+        const sig =
+          els.length +
+          ':' +
+          els
+            .map((e) => {
+              const r = e.getBoundingClientRect();
+              return `${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.width)},${Math.round(r.height)}`;
+            })
+            .join('|');
+        window.__sigStable = sig === window.__sig ? (window.__sigStable || 0) + 1 : 0;
+        window.__sig = sig;
+        return els.length > 0 && window.__sigStable >= needed;
       },
-      [DEEP_QUERY_ALL, previous],
-      { timeout: 45000, polling: 1000 },
+      [DEEP_QUERY_ALL, STABLE_POLLS],
+      { timeout: 45000, polling: POLL_MS },
     )
     .catch(async () => {
       const n = await page.locator('ha-card').count();
       throw new Error(
-        `Dashboard /${urlPath} did not settle: ${n} cards rendered after 45s. Zero cards means the view failed to build — check the page errors reported alongside this.`,
+        `Dashboard /${urlPath} did not settle: ${n} cards, geometry still changing after 45s. Zero cards means the view failed to build; a non-zero count that never settles means something is still reflowing — check the page errors reported alongside this.`,
       );
     });
 

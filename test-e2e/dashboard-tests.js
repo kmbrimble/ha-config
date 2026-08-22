@@ -24,10 +24,10 @@ const IGNORED_CONSOLE = [
 // noise — they are real bugs that predate this harness, listed here so the suite can still give
 // a signal on new breakage. Fix the underlying issue and delete the entry.
 //
-//  - weather-card: configuration.yaml loads bramkragten/weather-card from cdn.jsdelivr.net.
-//    It throws on every load and is the only frontend resource still fetched from an external
-//    CDN rather than /hacsfiles. Seen on all four dashboards as of 2026-08-22.
-const KNOWN_ISSUES = [/weather-card(\.min)?\.js/i, /Cannot convert undefined or null to object/i];
+// Currently empty. The one entry this started with (bramkragten/weather-card, loaded from
+// cdn.jsdelivr.net and throwing on every page load) was removed from configuration.yaml on
+// 2026-08-22 rather than tolerated — no dashboard used it. Keep this list empty if you can.
+const KNOWN_ISSUES = [];
 
 // Card geometry drifts by a pixel with sub-pixel layout rounding; anything larger is a real move.
 const BOX_TOLERANCE_PX = 2;

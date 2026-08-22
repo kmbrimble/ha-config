@@ -187,10 +187,25 @@ it. The same caveat applies to any future card embedding a LAN-only host.
 
 `KNOWN_ISSUES` in `test-e2e/dashboard-tests.js` lists real errors that fire on every dashboard,
 including known-good ones, so the suite can still give a signal on *new* breakage. These are bugs
-to fix, not noise to keep. Currently one entry: the `bramkragten/weather-card` module in
-`configuration.yaml` is the only frontend resource still loaded from an external CDN
-(`cdn.jsdelivr.net`) rather than `/hacsfiles`, and it throws on every page load. Fix the resource
-and delete the entry.
+to fix, not noise to keep. **It is currently empty — keep it that way if you can.** Its one
+original entry (the `bramkragten/weather-card` CDN module) was fixed by removal rather than
+tolerated.
+
+### The suite settles on card geometry, not card count
+
+`openDashboard()` waits until the full set of card bounding boxes stops changing, not until the
+card count stops changing. Two things arrive late and both have burned this suite: HACS card
+modules register after the view starts building (count climbs), and card-mod applies its styles
+after that (count already final, but every card then reflows). Waiting on the count alone returns
+while the page is at its *unstyled* geometry — the Kiosk cards measure 16px right and falsely
+report horizontal overflow.
+
+Settling on the same signature the tests then assert means the wait cannot be satisfied by a state
+the assertions would reject. **If you add an assertion about something that settles later than
+geometry, extend the settle signature to cover it too.**
+
+One caveat: the first dashboard load after an HA restart can still fail, because the frontend is
+cold and HA is still warming. Re-run rather than chasing it.
 
 ## Non-negotiable constraints
 
@@ -280,6 +295,27 @@ frontend:
 documented cache-busting mechanism; without it, HA/the browser can keep serving the old cached
 module after an update. If header-hiding silently breaks again after a kiosk-mode update, check
 this version string first before assuming a config regression.
+
+## Where a frontend module goes: `resources:` vs `extra_module_url`
+
+This split matters and is not interchangeable. Get it wrong and cards fail intermittently.
+
+| Kind of module | Goes under | Why |
+|---|---|---|
+| A custom **card** (referenced by a card's `type: custom:…`) | `lovelace: resources:` | HA **awaits** these before building a dashboard, so the element is registered when the view renders |
+| A global **frontend patch** (kiosk-mode, card-mod, wallpanel) | `frontend: extra_module_url` | Not referenced by any `type:`; losing the race only delays their effect |
+
+`extra_module_url` is **fire-and-forget** — HA does not await it before rendering. Every card
+module used to live there with no `resources:` declared at all, which raced: on ~50% of loads the
+Wall dashboard's 34 `custom:button-card` cards rendered "Configuration error" because button-card
+had not yet registered. It was masked for a long time by a dead `cdn.jsdelivr.net` weather-card
+fetch in `extra_module_url` whose internet round-trip delayed rendering just enough; removing that
+dead resource on 2026-08-22 exposed the race. Fixed by declaring the card modules as `resources:`
+(verified 10/10 clean cold loads, previously ~50%).
+
+**Do not move `card-mod` into `resources:`.** It was tried on 2026-08-22 and left the Kiosk
+bistable: `scrollWidth` 3456 (overflowing the 3440 display) on some loads, a wrong 1141px first
+card on others. It is a global patch, same category as kiosk-mode. Reverted.
 
 Do not add a second top-level `frontend:` key if one needs to change again — merge into the
 existing block, the same caution as for `lovelace:` elsewhere in this file.

@@ -31,10 +31,6 @@ frontend:
   # failing a card. Custom CARDS must go under `lovelace: resources:` below.
   extra_module_url:
     - /hacsfiles/kiosk-mode/kiosk-mode.js?v=1
-    # card-mod stays HERE, not under `lovelace: resources:`. It is a global frontend patch like
-    # kiosk-mode, not a card type. Moving it to resources on 2026-08-22 left the Kiosk layout
-    # bistable — scrollWidth 3456 (overflowing the 3440 display) on some loads and a wrong
-    # 1141px first card on others. Reverted; do not move it again.
     - /hacsfiles/lovelace-card-mod/card-mod.js?v=1
     - /hacsfiles/lovelace-wallpanel/wallpanel.js?v=1
 
