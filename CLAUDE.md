@@ -29,14 +29,25 @@ the deploy step.
 ```
 /projects/ha-config/
 ├── dashboards/
-│   ├── kiosk.yaml              # live Kiosk dashboard
-│   ├── kiosk.candidate.yaml    # scratch copy used for testing
-│   ├── wall.yaml               # live WallPanel dashboard
-│   └── wall.candidate.yaml     # scratch copy used for testing
-├── test-e2e/                   # Playwright tests
+│   ├── kiosk-main.yaml         # live Kiosk dashboard
+│   ├── kiosk-candidate.yaml    # scratch copy used for testing
+│   ├── wall-main.yaml          # live WallPanel dashboard
+│   └── wall-candidate.yaml     # scratch copy used for testing
+├── test-e2e/
+│   ├── kiosk.spec.js           # bound to the 3440x1440 project
+│   ├── wall.spec.js            # bound to the 2000x1200 project
+│   ├── dashboard-tests.js      # the shared suite both spec files build from
+│   ├── helpers.js              # auth, settle-and-load, shadow-DOM card geometry
+│   ├── baselines/              # committed card-geometry baselines
+│   └── screenshots/            # artefacts for the human (gitignored)
+├── playwright.config.js
+├── package.json
 ├── CHANGELOG.md
 └── CLAUDE.md
 ```
+
+The dashboard filenames match the dashboard KEY in `configuration.yaml`, hence the `-main` /
+`-candidate` suffixes rather than `.candidate.yaml`.
 
 Corresponding paths on the live system, via the mount:
 `/ha-config/dashboards/<same filenames>`
@@ -81,7 +92,27 @@ needed unless a future session establishes otherwise, and update this note if so
 
 ## Test command
 
-- **Playwright:** `npm run test:e2e` — tests in `test-e2e/`
+- `npm run test:e2e` — both dashboards, against the **candidate** copies (the development loop)
+- `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
+- `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
+- `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
+
+### Each dashboard is pinned to its display's resolution
+
+The two dashboards are laid out for one display each and are **only correct at that display's
+resolution** — any other viewport produces a layout that is wrong in ways the tests will either
+miss or falsely flag.
+
+| Dashboard | Resolution | Real display |
+|---|---|---|
+| Kiosk | 3440x1440, fullscreen | WQHD ultrawide, Windows 11 PC at `192.168.0.16` |
+| WallPanel | 2000x1200, landscape | Lenovo Tab P11 running the WallPanel app |
+
+This is enforced structurally, not by convention: `playwright.config.js` defines one project per
+display and binds it to one spec file with `testMatch`, so `kiosk.spec.js` can only ever run at
+3440x1440 and `wall.spec.js` only ever at 2000x1200. **Do not add a shared spec that runs under
+both projects** — that is what the config is shaped to prevent. The other dashboards are
+storage-mode, flexible, and not covered here.
 
 ### Authentication for the test browser
 
@@ -95,22 +126,18 @@ environment variable — it must never be committed, and never be printed to the
 (e.g. via `cat`, `echo`, `env`, or a debug print) even for verification. To check it's present
 without exposing it: `grep -q '^HA_TOKEN=' .env && echo found`.
 
-```js
-await page.addInitScript((token) => {
-  window.localStorage.setItem('hassTokens', JSON.stringify({
-    access_token: token,
-    token_type: 'Bearer',
-    expires_in: 1800,
-    expires: Date.now() + 1800 * 1000,
-    hassUrl: 'http://192.168.0.21:8123',
-    clientId: null,
-    refresh_token: '',
-  }));
-}, process.env.HA_TOKEN);
-```
+This is implemented once in `test-e2e/helpers.js` (`authenticate()`) — use it rather than
+re-injecting the token in a spec.
 
-**OPEN ITEM — the exact `hassTokens` object shape is version-dependent.** Verify it against
-Core 2026.8.1 on first use and correct this file if the shape differs.
+**RESOLVED — the `hassTokens` shape above is correct for Core 2026.8.1** (verified 2026-08-22).
+Two things about the injection that are not obvious:
+
+- **Wrap the `localStorage.setItem` in try/catch.** `addInitScript` runs in *every* frame, and the
+  Kiosk dashboard embeds sandboxed iframes whose `localStorage` throws `SecurityError` on access.
+  Without the guard, every run reports phantom page errors from frames that never needed a token.
+- **A view with a `visible: - user: <id>` restriction renders zero cards** for any other user,
+  including the token's. That looks identical to a broken dashboard. If a dashboard suddenly
+  renders nothing, check for a `visible:` block before hunting for a card error.
 
 ### What the tests must assert
 
@@ -125,6 +152,19 @@ Deterministic assertions only. These are the ones that carry real signal:
 - **Bounding-box assertions** on cards that the change was NOT supposed to move — this is what
   catches collateral layout damage.
 
+All of these are implemented. Two mechanics worth knowing before editing the suite:
+
+- **Card geometry is baselined**, not asserted inline. `test-e2e/baselines/<display>-<target>.json`
+  holds every card's rounded box; the suite writes it on first run (and skips), then compares on
+  every run after. Card geometry is stable between runs even though the values inside the cards
+  are not. After an *intended* layout change, re-run with `UPDATE_BASELINE=1` and commit the new
+  baseline — the diff in that file is a readable record of what moved.
+- **Nothing in `page.evaluate` can use `document.querySelectorAll` or `body.innerText`.** Every HA
+  card lives inside nested shadow roots, which neither crosses — an `innerText` check for
+  "Entity not found" silently passes on a page full of them. Use Playwright locators (which
+  pierce shadow DOM natively) for counting and text, and the `DEEP_QUERY_ALL` walker in
+  `helpers.js` for anything that genuinely needs to run in the page.
+
 ### What the tests must NOT try to assert
 
 - **Whether the change "looks right".** That is a human judgement. Do not write a test that
@@ -136,6 +176,21 @@ Deterministic assertions only. These are the ones that carry real signal:
 
 Always capture a screenshot at the target resolution and save it to `test-e2e/screenshots/` for
 the user to review, but treat it as an artefact for the human, not as a pass/fail signal.
+
+**The Kiosk screenshot always has a large black region on the left — this is not a fault.** Card 0
+is a 1720px-wide iframe onto `http://magicmirror.kiztigs.com`, which is LAN-only and unreachable
+from the agent container, so it falls back to the card's styled black background. On the actual
+Kiosk PC it renders MagicMirror. Do not "fix" it, and do not report the Kiosk as broken because of
+it. The same caveat applies to any future card embedding a LAN-only host.
+
+### Known pre-existing failures the suite deliberately tolerates
+
+`KNOWN_ISSUES` in `test-e2e/dashboard-tests.js` lists real errors that fire on every dashboard,
+including known-good ones, so the suite can still give a signal on *new* breakage. These are bugs
+to fix, not noise to keep. Currently one entry: the `bramkragten/weather-card` module in
+`configuration.yaml` is the only frontend resource still loaded from an external CDN
+(`cdn.jsdelivr.net`) rather than `/hacsfiles`, and it throws on every page load. Fix the resource
+and delete the entry.
 
 ## Non-negotiable constraints
 

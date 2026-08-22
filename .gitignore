@@ -5,3 +5,5 @@ secrets.yaml
 test-e2e/screenshots/
 node_modules/
 .env
+test-results/
+playwright-report/

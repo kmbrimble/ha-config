@@ -1,0 +1,15 @@
+{
+  "name": "ha-config",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Version-controlled Home Assistant dashboards, with Playwright checks for the Kiosk and WallPanel displays.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:kiosk": "playwright test --project=kiosk",
+    "test:e2e:wall": "playwright test --project=wall",
+    "test:e2e:baseline": "UPDATE_BASELINE=1 playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}
