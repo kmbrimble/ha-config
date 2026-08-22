@@ -128,9 +128,23 @@ domain that was not previously loaded at all.
 
 That last group is why today's changes each needed a restart: the energy-comparison package
 contained a `utility_meter:` (no reload service), and the weather-card fix touched `frontend:`
-and `lovelace:`. Note `lovelace.reload_resources` exists and may cover later edits to the
-`lovelace: resources:` list — **untested**, so verify it took effect before trusting it, and
-update this note either way.
+and `lovelace: dashboards:`.
+
+**`lovelace: resources:` needs NO restart — `lovelace.reload_resources` works** (verified
+end-to-end 2026-08-22). Editing the `resources:` list and calling that service updates what HA
+serves in under a second, and the browser then fetches the new URL on next load. Tested in both
+directions by bumping `button-card.js?v=1` to `?v=2` and back: before the reload HA kept serving
+the old URL, after it served the new one, and three browser loads each requested the new URL with
+39 cards and zero error cards. So a card module can be added, removed, or cache-busted with a
+reload alone.
+
+Note the split within the same `lovelace:` block — `resources:` reloads, `dashboards:` does not.
+Adding or renaming a dashboard still needs a restart.
+
+**Bumping a `?v=` cache-buster after a HACS card update is therefore a reload, not a restart.**
+That is the documented way to stop a stale cached module being served (see the kiosk-mode trap
+above), and it no longer costs a display blink — though kiosk-mode itself lives in
+`extra_module_url`, so bumping *that* one still needs a restart.
 - **The first dashboard load after a restart can fail** while the frontend is cold. Re-check
   before treating it as a real failure.
 
