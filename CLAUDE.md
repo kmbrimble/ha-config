@@ -84,11 +84,21 @@ than `kiosk`/`wall`. If a future change needs a new dashboard key, it must be hy
 
 ### Reloading
 
-**RESOLVED:** YAML-mode dashboards did NOT reliably pick up changes without a restart in
-practice. `ha core check` followed by `ha core restart` was required after editing
-`configuration.yaml`'s `lovelace:` block. Whether a plain dashboard-file edit (not touching
-`configuration.yaml`) reloads without a restart is still unconfirmed — assume a restart is
-needed unless a future session establishes otherwise, and update this note if so.
+**RESOLVED — it depends on which file changed:**
+
+- **Editing a dashboard YAML** (`dashboards/*.yaml`) — **no restart needed.** Copy the file to the
+  mount and HA serves the new config immediately; confirmed 2026-08-22 by editing
+  `kiosk-candidate.yaml` and reading it straight back over the websocket
+  (`{"type":"lovelace/config","url_path":"kiosk-candidate"}`). A browser refresh picks it up.
+  This is the common case in the candidate workflow, so most dashboard iteration needs no restart.
+- **Editing `configuration.yaml`** (the `lovelace:`, `frontend:`, or any other block) — **restart
+  required.** Validate with the REST config-check endpoint first (see constraint #1); `ha core
+  check` / `ha core restart` are not reachable from this container, so use the
+  `homeassistant.restart` service and then poll `/api/config` until `state` is `RUNNING`. It
+  reports `NOT_RUNNING` for ~90-135s during startup, and the API answers before the restart has
+  actually taken effect — so poll for `RUNNING`, never just for an HTTP 200.
+- **The first dashboard load after a restart can fail** while the frontend is cold. Re-check
+  before treating it as a real failure.
 
 ## Test command
 
@@ -316,6 +326,14 @@ dead resource on 2026-08-22 exposed the race. Fixed by declaring the card module
 **Do not move `card-mod` into `resources:`.** It was tried on 2026-08-22 and left the Kiosk
 bistable: `scrollWidth` 3456 (overflowing the 3440 display) on some loads, a wrong 1141px first
 card on others. It is a global patch, same category as kiosk-mode. Reverted.
+
+`.storage/lovelace_resources` is **inert** while `resource_mode: yaml` is set — HA does not read
+it, and the `lovelace/resources/*` websocket commands return `unknown_command` because the
+resource collection is never loaded. Two dead entries (a corrupted
+`/hacsfiles/light-entity-card/null` and the weather-card CDN URL) were removed from it by hand on
+2026-08-22; HA did not rewrite the file afterwards, as expected in this mode. It still mirrors
+what HACS installed, so if `resource_mode` is ever switched back to `storage`, review it first —
+its entries would come back to life.
 
 Do not add a second top-level `frontend:` key if one needs to change again — merge into the
 existing block, the same caution as for `lovelace:` elsewhere in this file.

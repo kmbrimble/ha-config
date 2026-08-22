@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace_resources",
+  "data": {
+    "items": [
+      {
+        "url": "/hacsfiles/light-entity-card/null?hacstag=168744428612",
+        "type": "module",
+        "id": "dc88497bb23646679b8682bcb24a9ed1"
+      },
+      {
+        "id": "e44a98774f3b4dad88bc02796f529f8e",
+        "url": "/hacsfiles/slider-button-card/slider-button-card.js?hacstag=4987940331130",
+        "type": "module"
+      },
+      {
+        "id": "ef3823d59a7d4305aa9641c12342809b",
+        "url": "https://cdn.jsdelivr.net/gh/bramkragten/weather-card/dist/weather-card.min.js",
+        "type": "module"
+      },
+      {
+        "id": "1a795f5429d841be9ecf99bc5ae46fd1",
+        "url": "/hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?hacstag=4929961831110",
+        "type": "module"
+      },
+      {
+        "id": "a71eb6f9bcf94f90820bc740648728bd",
+        "url": "/hacsfiles/kiosk-mode/kiosk-mode.js?hacstag=4973191281400",
+        "type": "module"
+      },
+      {
+        "id": "5059aa8cb61246a9ab12c2fa2807e4d4",
+        "url": "/hacsfiles/lovelace-card-mod/card-mod.js?hacstag=190927524421",
+        "type": "module"
+      },
+      {
+        "id": "651a4b6f99a34d25a6afd27243789505",
+        "url": "/hacsfiles/stack-in-card/stack-in-card.js?hacstag=248954055020",
+        "type": "module"
+      },
+      {
+        "id": "8440b03d66f64663b58a4c7b6051e292",
+        "url": "/hacsfiles/button-card/button-card.js?hacstag=146194325701",
+        "type": "module"
+      },
+      {
+        "id": "d6ae3f04b9df48a997a9b854d1d4e007",
+        "url": "/hacsfiles/lovelace-layout-card/layout-card.js?hacstag=156434866247",
+        "type": "module"
+      },
+      {
+        "id": "555a9c32108c47819d63f1e2e480debc",
+        "url": "/hacsfiles/lovelace-wallpanel/wallpanel.js?hacstag=3095064164660",
+        "type": "module"
+      },
+      {
+        "id": "0d703cfcb95749279169e1afc8b668e6",
+        "url": "/hacsfiles/apexcharts-card/apexcharts-card.js?hacstag=331701152223",
+        "type": "module"
+      },
+      {
+        "id": "a1039f4f028546959811b37b343a0528",
+        "url": "/hacsfiles/weather-radar-card/weather-radar-card.js?hacstag=487680971372",
+        "type": "module"
+      }
+    ]
+  }
+}
