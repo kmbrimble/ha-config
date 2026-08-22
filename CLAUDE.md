@@ -91,12 +91,46 @@ than `kiosk`/`wall`. If a future change needs a new dashboard key, it must be hy
   `kiosk-candidate.yaml` and reading it straight back over the websocket
   (`{"type":"lovelace/config","url_path":"kiosk-candidate"}`). A browser refresh picks it up.
   This is the common case in the candidate workflow, so most dashboard iteration needs no restart.
-- **Editing `configuration.yaml`** (the `lovelace:`, `frontend:`, or any other block) — **restart
-  required.** Validate with the REST config-check endpoint first (see constraint #1); `ha core
-  check` / `ha core restart` are not reachable from this container, so use the
-  `homeassistant.restart` service and then poll `/api/config` until `state` is `RUNNING`. It
-  reports `NOT_RUNNING` for ~90-135s during startup, and the API answers before the restart has
-  actually taken effect — so poll for `RUNNING`, never just for an HTTP 200.
+- **Editing `configuration.yaml`** — **try a reload first, restart only if that cannot work.**
+  See the decision rule below. A restart is ~90-135s and blinks both displays; a reload is ~1s
+  and HA never leaves `RUNNING`, so the reload is always worth attempting when the rule allows it.
+  When a restart really is needed: validate with the REST config-check endpoint first (see
+  constraint #1), then — `ha core check` / `ha core restart` are not reachable from this
+  container — call the `homeassistant.restart` service and poll `/api/config` until `state` is
+  `RUNNING`. It reports `NOT_RUNNING` for ~90-135s during startup, and **the API answers before
+  the restart has taken effect**, so poll for `RUNNING`, never just for an HTTP 200.
+
+### Reload or restart? The rule
+
+**A domain can be reloaded if and only if it exposes a reload service.** Check against the live
+instance rather than guessing:
+
+```
+curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/services \
+  | python3 -c "import json,sys;[print(f\"{d['domain']}.{s}\") for d in json.load(sys.stdin) for s in d['services'] if 'reload' in s]"
+```
+
+`homeassistant.reload_all` runs every one of them at once and is the right default first step.
+Validate the config **before** reloading — a reload applies the change just as a restart does, so
+the config-check gate in constraint #1 applies equally.
+
+As of 2026-08-22 this instance exposes 26 reload services, including `template`, `automation`,
+`script`, `scene`, `statistics`, `mqtt`, `person`, `zone`, `group`, all `input_*`, and
+`lovelace.reload_resources`.
+
+**Reloadable — try `homeassistant.reload_all` first:** `template:`, `automation:`, `script:`,
+`scene:`, `sensor:` statistics platforms, `mqtt:` manual entities, `group:`, `person:`, `zone:`,
+`input_*:`, and anything in `packages/` made only of those.
+
+**Restart required — no reload service exists:** `frontend:` (including `extra_module_url`),
+`lovelace:` `dashboards:`, `recorder:`, `http:`, auth providers, `utility_meter:`, and adding a
+domain that was not previously loaded at all.
+
+That last group is why today's changes each needed a restart: the energy-comparison package
+contained a `utility_meter:` (no reload service), and the weather-card fix touched `frontend:`
+and `lovelace:`. Note `lovelace.reload_resources` exists and may cover later edits to the
+`lovelace: resources:` list — **untested**, so verify it took effect before trusting it, and
+update this note either way.
 - **The first dashboard load after a restart can fail** while the frontend is cold. Re-check
   before treating it as a real failure.
 
