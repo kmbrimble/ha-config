@@ -17,7 +17,12 @@ describing as though it existed, and fixed a dashboard loading bug that harness 
   daily tariff buckets and could not survive the utility meters being removed.
 - The `Energy Cost Comparison` storage-mode dashboard, via the `lovelace/dashboards/delete`
   websocket command. This was an explicit one-off waiver of the "never modify the storage-mode
-  dashboards" constraint; that constraint now reads five dashboards, not six.
+  dashboards" constraint.
+- The `Electricity` storage-mode dashboard, removed by the user. It was the only remaining
+  consumer of `select.grid_energy_tariff_tracker` and `sensor.max_30m_grid_usage`, so its removal
+  closes out the last dangling references to the deleted tariff tracker. Its five solar tiles
+  went with it; solar remains on the built-in Energy dashboard. The storage-mode dashboard
+  constraint now covers four dashboards, not six.
 - The `bramkragten/weather-card` module from `frontend: extra_module_url`. No dashboard used it,
   and it threw on every page load. It was the only frontend resource still fetched from an
   external CDN.
@@ -79,9 +84,6 @@ metering (`Total Grid Energy`, the Emerald MQTT sensors, `Grid Power Peak (24h)`
   resolving another open item.
 
 ### Known issues
-- The `Electricity` storage-mode dashboard still references `select.grid_energy_tariff_tracker`
-  and `sensor.max_30m_grid_usage`, both removed, so it shows two dead tiles. Left in place as it
-  is outside the waiver given for the comparison dashboard; its five solar tiles are unaffected.
 - Four stale `*_amber_simulated` entity registry entries predate this work, are defined in no
   YAML, and need manual removal.
 - The Kiosk screenshot artefact always shows a large black region on the left. That is the
