@@ -324,7 +324,14 @@ There is **no CI build and no container to update**. Do not run `gh run watch` i
 2. Copy the verified live file to the mount:
    `cp dashboards/<name>.yaml /ha-config/dashboards/`
 3. Trigger the reload.
-4. Hand back to the user with: the screenshot path, what changed, and a request to eyeball the
+4. **For the Kiosk dashboard specifically**, also refresh the physical display via the
+   `browser_mod` HACS integration (installed 2026-08-29 for this purpose):
+   `curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" -d '{"browser_id": "kiosk"}' http://192.168.0.21:8123/api/services/browser_mod/refresh`
+   A `[]` response only means HA accepted the service call — `browser_mod` registers browser IDs
+   dynamically from the connected frontend, so this doesn't confirm the Kiosk PC actually reloaded.
+   WallPanel doesn't have a known `browser_mod` browser ID yet — check before assuming the same
+   trick applies there.
+5. Hand back to the user with: the screenshot path, what changed, and a request to eyeball the
    actual display — the Kiosk PC at 3440x1440 or the WallPanel tablet — since visual correctness
    is not machine-verifiable.
 
