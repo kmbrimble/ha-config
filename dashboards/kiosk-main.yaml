@@ -326,6 +326,58 @@ views:
                 var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
                 return 'Updated ' + d.toLocaleString('en-AU', opts);
               ]]]
+      - type: custom:apexcharts-card
+        card_mod:
+          style: |
+            :host { margin-top: 8px !important; }
+            ha-card {
+              background: #1a1a1a !important;
+              border-radius: 6px !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+        header:
+          show: false
+        graph_span: 14d
+        chart_type: line
+        yaxis:
+        - decimals: 2
+          min: '|-0.1|'
+          max: '|+0.1|'
+        apex_config:
+          chart:
+            height: 200
+            toolbar:
+              show: false
+          legend:
+            show: false
+          grid:
+            show: true
+            borderColor: '#333333'
+          xaxis:
+            labels:
+              format: dd/MM
+              style:
+                colors: '#808080'
+                fontSize: '10px'
+          yaxis:
+          - labels:
+              style:
+                colors: '#808080'
+                fontSize: '10px'
+        series:
+        - entity: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+          name: Kenmore
+          color: '#4fc3f7'
+          stroke_width: 2
+          curve: stepline
+          transform: return x / 100;
+        - entity: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+          name: Sunnybank
+          color: '#ffb74d'
+          stroke_width: 2
+          curve: stepline
+          transform: return x / 100;
     - type: vertical-stack
       card_mod:
         style: ":host { \n  width: 1273px !important; \n  flex: 0 0 1273px !important; \n  margin: 0 !important; \n  height: 100vh !important; \n  background: black !important;\n  --vertical-stack-card-gap: 0px;\n}\n"
