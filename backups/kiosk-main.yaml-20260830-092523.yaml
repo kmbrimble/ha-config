@@ -215,19 +215,16 @@ views:
           name: Kenmore
           show_state: false
           show_icon: false
-          variables:
-            prev_entity: sensor.kenmore_fuel_previous_price
           styles:
             card:
             - background-color: '#1a1a1a'
             - border-radius: 6px
-            - padding: 8px 10px
+            - padding: 14px 10px
             - height: 90px
             grid:
-            - grid-template-areas: '"n" "price" "ts"'
-            - grid-template-rows: min-content min-content min-content
+            - grid-template-areas: '"n" "price"'
+            - grid-template-rows: min-content 1fr
             - grid-template-columns: 1fr
-            - row-gap: 0px
             name:
             - justify-self: start
             - align-self: start
@@ -241,51 +238,24 @@ views:
               - font-size: 28px
               - font-weight: 700
               - color: '#4fc3f7'
-              ts:
-              - justify-self: start
-              - align-self: start
-              - font-size: 11px
-              - font-weight: 400
-              - color: '#808080'
           custom_fields:
             price: |
-              [[[
-                var cur = Number(entity.state);
-                var priceStr = '$' + (cur / 100).toFixed(3);
-                var prevState = states[variables.prev_entity];
-                var prev = prevState ? Number(prevState.state) : NaN;
-                var arrow = '';
-                if (!isNaN(prev) && prev > 0 && cur > 0 && cur !== prev) {
-                  arrow = cur > prev
-                    ? '<span style="color:#ff5252; font-size:0.5em; margin-left:8px;">&#9650;</span>'
-                    : '<span style="color:#69f0ae; font-size:0.5em; margin-left:8px;">&#9660;</span>';
-                }
-                return priceStr + arrow;
-              ]]]
-            ts: |
-              [[[
-                var d = new Date(entity.last_changed);
-                var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
-                return 'Updated ' + d.toLocaleString('en-AU', opts);
-              ]]]
+              [[[ return '$' + (Number(entity.state) / 100).toFixed(3); ]]]
         - type: custom:button-card
           entity: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
           name: Sunnybank
           show_state: false
           show_icon: false
-          variables:
-            prev_entity: sensor.sunnybank_fuel_previous_price
           styles:
             card:
             - background-color: '#1a1a1a'
             - border-radius: 6px
-            - padding: 8px 10px
+            - padding: 14px 10px
             - height: 90px
             grid:
-            - grid-template-areas: '"n" "price" "ts"'
-            - grid-template-rows: min-content min-content min-content
+            - grid-template-areas: '"n" "price"'
+            - grid-template-rows: min-content 1fr
             - grid-template-columns: 1fr
-            - row-gap: 0px
             name:
             - justify-self: start
             - align-self: start
@@ -299,33 +269,9 @@ views:
               - font-size: 28px
               - font-weight: 700
               - color: '#ffb74d'
-              ts:
-              - justify-self: start
-              - align-self: start
-              - font-size: 11px
-              - font-weight: 400
-              - color: '#808080'
           custom_fields:
             price: |
-              [[[
-                var cur = Number(entity.state);
-                var priceStr = '$' + (cur / 100).toFixed(3);
-                var prevState = states[variables.prev_entity];
-                var prev = prevState ? Number(prevState.state) : NaN;
-                var arrow = '';
-                if (!isNaN(prev) && prev > 0 && cur > 0 && cur !== prev) {
-                  arrow = cur > prev
-                    ? '<span style="color:#ff5252; font-size:0.5em; margin-left:8px;">&#9650;</span>'
-                    : '<span style="color:#69f0ae; font-size:0.5em; margin-left:8px;">&#9660;</span>';
-                }
-                return priceStr + arrow;
-              ]]]
-            ts: |
-              [[[
-                var d = new Date(entity.last_changed);
-                var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
-                return 'Updated ' + d.toLocaleString('en-AU', opts);
-              ]]]
+              [[[ return '$' + (Number(entity.state) / 100).toFixed(3); ]]]
     - type: vertical-stack
       card_mod:
         style: ":host { \n  width: 1273px !important; \n  flex: 0 0 1273px !important; \n  margin: 0 !important; \n  height: 100vh !important; \n  background: black !important;\n  --vertical-stack-card-gap: 0px;\n}\n"
