@@ -345,7 +345,7 @@ views:
               name: Entry Hallway
             - type: custom:button-card
               template: light_tile_orchid
-              entity: light.garage
+              entity: light.garage_2
               name: Garage Hallway
             - type: custom:button-card
               template: light_tile_orchid
