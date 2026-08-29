@@ -34,7 +34,6 @@ views:
             display: flex !important;
             flex-direction: column !important;
           }
-          #root { height: 100% !important; justify-content: flex-end !important; }
           ha-card { background: transparent !important; border: none; box-shadow: none; }
       cards:
       - type: conditional
@@ -208,70 +207,6 @@ views:
                   }
                   return `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#222;color:#888;font-weight:bold;font-size:14px;">NO GPS DATA</div>`;
                 ]]]
-      - type: horizontal-stack
-        cards:
-        - type: custom:button-card
-          entity: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
-          name: Kenmore
-          show_state: false
-          show_icon: false
-          styles:
-            card:
-            - background-color: '#1a1a1a'
-            - border-radius: 6px
-            - padding: 14px 10px
-            - height: 90px
-            grid:
-            - grid-template-areas: '"n" "price"'
-            - grid-template-rows: min-content 1fr
-            - grid-template-columns: 1fr
-            name:
-            - justify-self: start
-            - align-self: start
-            - font-size: 20px
-            - font-weight: 400
-            - color: '#e0e0e0'
-            custom_fields:
-              price:
-              - justify-self: start
-              - align-self: center
-              - font-size: 28px
-              - font-weight: 700
-              - color: '#4fc3f7'
-          custom_fields:
-            price: |
-              [[[ return '$' + (Number(entity.state) / 100).toFixed(3); ]]]
-        - type: custom:button-card
-          entity: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
-          name: Sunnybank
-          show_state: false
-          show_icon: false
-          styles:
-            card:
-            - background-color: '#1a1a1a'
-            - border-radius: 6px
-            - padding: 14px 10px
-            - height: 90px
-            grid:
-            - grid-template-areas: '"n" "price"'
-            - grid-template-rows: min-content 1fr
-            - grid-template-columns: 1fr
-            name:
-            - justify-self: start
-            - align-self: start
-            - font-size: 20px
-            - font-weight: 400
-            - color: '#e0e0e0'
-            custom_fields:
-              price:
-              - justify-self: start
-              - align-self: center
-              - font-size: 28px
-              - font-weight: 700
-              - color: '#ffb74d'
-          custom_fields:
-            price: |
-              [[[ return '$' + (Number(entity.state) / 100).toFixed(3); ]]]
     - type: vertical-stack
       card_mod:
         style: ":host { \n  width: 1273px !important; \n  flex: 0 0 1273px !important; \n  margin: 0 !important; \n  height: 100vh !important; \n  background: black !important;\n  --vertical-stack-card-gap: 0px;\n}\n"
