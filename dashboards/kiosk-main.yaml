@@ -233,7 +233,7 @@ views:
           custom_fields:
             content: |
               [[[
-                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#ec407a; font-size:23cqw; font-weight:700; line-height:1;">'
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#eaff00; font-size:23cqw; font-weight:700; line-height:1;">'
                   + '<ha-icon icon="mdi:thermometer" style="--mdc-icon-size:34cqw;"></ha-icon>'
                   + '<span>' + Number(entity.state).toFixed(1) + ' °C</span>'
                   + '</div>';
