@@ -217,7 +217,7 @@ views:
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 1 / 1; container-type: inline-size; }
+              ha-card { aspect-ratio: 1 / 1; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -233,8 +233,8 @@ views:
           custom_fields:
             content: |
               [[[
-                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#ec407a; font-size:23cqw; font-weight:700; line-height:1;">'
-                  + '<ha-icon icon="mdi:thermometer" style="--mdc-icon-size:34cqw;"></ha-icon>'
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:4px; color:#ec407a; font-size:38px; font-weight:700; line-height:1;">'
+                  + '<ha-icon icon="mdi:thermometer" style="--mdc-icon-size:56px;"></ha-icon>'
                   + '<span>' + Number(entity.state).toFixed(1) + ' °C</span>'
                   + '</div>';
               ]]]
@@ -245,7 +245,7 @@ views:
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 1 / 1; container-type: inline-size; }
+              ha-card { aspect-ratio: 1 / 1; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -261,8 +261,8 @@ views:
           custom_fields:
             content: |
               [[[
-                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#26c6da; font-size:23cqw; font-weight:700; line-height:1;">'
-                  + '<ha-icon icon="mdi:water-percent" style="--mdc-icon-size:34cqw;"></ha-icon>'
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:4px; color:#26c6da; font-size:38px; font-weight:700; line-height:1;">'
+                  + '<ha-icon icon="mdi:water-percent" style="--mdc-icon-size:56px;"></ha-icon>'
                   + '<span>' + Math.round(Number(entity.state)) + ' %</span>'
                   + '</div>';
               ]]]
