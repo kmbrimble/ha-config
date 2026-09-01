@@ -34,8 +34,7 @@ views:
             display: flex !important;
             flex-direction: column !important;
           }
-          #root { height: 100% !important; }
-          #root > hui-card:nth-last-child(3) { margin-top: auto !important; }
+          #root { height: 100% !important; justify-content: flex-end !important; }
           ha-card { background: transparent !important; border: none; box-shadow: none; }
       cards:
       - type: conditional
