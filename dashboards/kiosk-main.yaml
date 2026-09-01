@@ -218,7 +218,7 @@ views:
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 1 / 1; container-type: inline-size; }
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -234,19 +234,19 @@ views:
           custom_fields:
             content: |
               [[[
-                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#eaff00; font-size:23cqw; font-weight:700; line-height:1;">'
-                  + '<ha-icon icon="mdi:thermometer" style="--mdc-icon-size:34cqw;"></ha-icon>'
-                  + '<span>' + Number(entity.state).toFixed(1) + ' °C</span>'
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:2%; color:#eaff00; line-height:1;">'
+                  + '<span style="font-size:13cqw; font-weight:400;">Living Room</span>'
+                  + '<span style="font-size:23cqw; font-weight:700;">' + Number(entity.state).toFixed(1) + ' °C</span>'
                   + '</div>';
               ]]]
         - type: custom:button-card
-          entity: sensor.downstairs_living_remote_humidity
+          entity: sensor.bedroom_remote_temperature
           show_name: false
           show_state: false
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 1 / 1; container-type: inline-size; }
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -262,9 +262,9 @@ views:
           custom_fields:
             content: |
               [[[
-                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:4%; color:#26c6da; font-size:23cqw; font-weight:700; line-height:1;">'
-                  + '<ha-icon icon="mdi:water-percent" style="--mdc-icon-size:34cqw;"></ha-icon>'
-                  + '<span>' + Math.round(Number(entity.state)) + ' %</span>'
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:2%; color:#26c6da; line-height:1;">'
+                  + '<span style="font-size:13cqw; font-weight:400;">Bedroom</span>'
+                  + '<span style="font-size:23cqw; font-weight:700;">' + Number(entity.state).toFixed(1) + ' °C</span>'
                   + '</div>';
               ]]]
       - type: horizontal-stack
