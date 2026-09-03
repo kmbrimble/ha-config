@@ -10,6 +10,7 @@ homeassistant:
     - type: homeassistant
   
 
+
       
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -146,13 +147,53 @@ template:
           {# 3. Add to the existing total #}
           {{ (this.state | float(0)) + new_kwh }}
 
-  # Dining Table plug is still Tuya Cloud, so it keeps its kWh wrapper.
-  # The other Arlec plugs now use their Tuya Local energy sensors directly.
+  # Make all Arlec smart plugs energy sensors compatible with built-in Energy dashboard
   - sensor:
+      - name: "Bike Garage Energy"
+        unique_id: bike_garage_energy_fixed
+        state: "{{ states('sensor.bike_garage_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Car Garage Energy"
+        unique_id: car_garage_energy_fixed
+        state: "{{ states('sensor.car_garage_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Carport Door Energy"
+        unique_id: carport_door_energy_fixed
+        state: "{{ states('sensor.carport_door_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
 
       - name: "Dining Table Energy"
         unique_id: dining_table_energy_fixed
         state: "{{ states('sensor.dining_table_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Footpath Lights Energy"
+        unique_id: footpath_lights_energy_fixed
+        state: "{{ states('sensor.footpath_lights_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Laundry Light Energy"
+        unique_id: laundry_light_energy_fixed
+        state: "{{ states('sensor.laundry_light_total_energy') }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "TV Lounge Energy"
+        unique_id: tv_lounge_energy_fixed
+        state: "{{ states('sensor.tv_lounge_total_energy') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total_increasing

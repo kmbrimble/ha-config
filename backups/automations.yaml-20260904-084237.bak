@@ -7,8 +7,8 @@
   conditions: []
   actions:
   - type: turn_on
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   mode: single
 - id: '1671006087790'
@@ -20,8 +20,8 @@
   conditions: []
   actions:
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   mode: single
 - id: '1671249681521'
@@ -53,12 +53,12 @@
       minutes: '{{ range(0, 30)|random|int }}'
   - target:
       entity_id:
-      - light.entry_hallway_front_door
-      - light.stair_lower
-      - light.upstairs_tv_outer_1
-      - light.upstairs_tv_outer_2
+      - light.entry_hallway_front_door_2
+      - light.stair_lower_2
+      - light.upstairs_tv_outer_1_2
+      - light.upstairs_tv_outer_2_2
       - light.garage_internal
-      - light.garage
+      - light.garage_2
       - light.upstairs_pool
       - light.upstairs_tv
       area_id: []
@@ -79,8 +79,8 @@
       brightness_pct: 30
     target:
       entity_id:
-      - light.dining3
-      - light.dining7
+      - light.dining3_2
+      - light.dining7_2
   mode: single
 - id: '1677314096452'
   alias: Downstairs Lights Off at Night
@@ -95,8 +95,8 @@
     data: {}
     target:
       entity_id:
-      - light.dining3
-      - light.dining7
+      - light.dining3_2
+      - light.dining7_2
   mode: single
 - id: '1702893981116'
   alias: Lights On Before Sunset
@@ -115,11 +115,11 @@
     target:
       entity_id:
       - light.upstairs_tv
-      - light.stair_lower
-      - light.entry_hallway_front_door
-      - light.garage
+      - light.stair_lower_2
+      - light.entry_hallway_front_door_2
+      - light.garage_2
       - light.garage_internal
-      - light.bed_light
+      - light.bed_light_2
   - delay:
       hours: 1
       minutes: 0
@@ -202,9 +202,9 @@
     data: {}
     target:
       entity_id:
-      - switch.bike_garage
-      - switch.car_garage
-      - switch.carport_door
+      - switch.bike_garage_socket_1
+      - switch.car_garage_socket_1
+      - switch.carport_door_socket_1
   mode: single
 - id: '1745647833162'
   alias: Laundry Evening - ON
@@ -218,7 +218,7 @@
     metadata: {}
     data: {}
     target:
-      entity_id: light.laundry_laundry_light
+      entity_id: light.laundry_light_socket_1
   - delay:
       hours: 6
       minutes: 30
@@ -228,7 +228,7 @@
     metadata: {}
     data: {}
     target:
-      entity_id: light.laundry_laundry_light
+      entity_id: light.laundry_light_socket_1
   mode: single
 - id: '1748645808483'
   alias: Daytime Lights If Home
@@ -252,8 +252,8 @@
       brightness_pct: 20
     target:
       entity_id:
-      - light.stair_lower
-      - light.entry_hallway_front_door
+      - light.stair_lower_2
+      - light.entry_hallway_front_door_2
   - action: light.turn_on
     metadata: {}
     data:
@@ -289,8 +289,8 @@
   conditions:
   - condition: device
     type: is_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   actions:
   - repeat:
@@ -308,8 +308,8 @@
           seconds: 0
           milliseconds: 500
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   - action: light.turn_on
     metadata: {}
@@ -323,8 +323,8 @@
       seconds: 0
       milliseconds: 0
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   - action: light.turn_off
     metadata: {}
@@ -347,8 +347,8 @@
     after: sunset
   - condition: device
     type: is_off
-    device_id: 0a3e45622f179e41a8db137ab6525afc
-    entity_id: bf1a694bac8a348c242da0933d5ba290
+    device_id: ac4bd6d7610348b9940d14d6495d5179
+    entity_id: ee6258d308aedf7b45caea34984788b0
     domain: light
   actions:
   - alias: Turn on the light
@@ -539,8 +539,8 @@
     after_offset: '2:00:00'
   actions:
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   - alias: Wait until there is no motion from device
     wait_for_trigger:
@@ -560,8 +560,8 @@
       seconds: 30
       milliseconds: 0
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   - delay:
       hours: 0
@@ -569,8 +569,8 @@
       seconds: 5
       milliseconds: 0
   - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
+    device_id: 17a3160ba86f0a373c81643f02476d9e
+    entity_id: 27b75029f69de8d42b0234a471b9f125
     domain: switch
   mode: parallel
   max_exceeded: silent
@@ -603,7 +603,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - light.kitchen_1
+    - light.kitchen_1_2
     from: 'on'
     to: 'off'
     for:
@@ -648,7 +648,7 @@
     metadata: {}
     data: {}
     target:
-      entity_id: light.laundry_laundry_light
+      entity_id: light.laundry_light_socket_1
   mode: single
 - id: '1760868880917'
   alias: Upstairs Hallway Lights Off at Night
@@ -663,8 +663,8 @@
     data: {}
     target:
       entity_id:
-      - light.upstairs_hallway_end
-      - light.upstairs_hallway_linen_cupboard
+      - light.upstairs_hallway_end_2
+      - light.upstairs_hallway_linen_cupboard_2
   mode: single
 - id: '1787989550000'
   alias: Internal Door Lock Battery Low
@@ -720,7 +720,7 @@
     before: sunrise
   actions:
   - variables:
-      footpath_was_on: '{{ is_state(''switch.footpath_lights'', ''on'') }}'
+      footpath_was_on: '{{ is_state(''switch.pc191ha_series_3_8_socket_1'', ''on'') }}'
   - action: light.turn_on
     data:
       brightness_pct: 100
@@ -728,7 +728,7 @@
       entity_id: light.house_front
   - action: switch.turn_on
     target:
-      entity_id: switch.footpath_lights
+      entity_id: switch.pc191ha_series_3_8_socket_1
   - delay:
       minutes: 15
   - action: light.turn_off
@@ -740,7 +740,7 @@
     then:
     - action: switch.turn_off
       target:
-        entity_id: switch.footpath_lights
+        entity_id: switch.pc191ha_series_3_8_socket_1
   - delay:
       minutes: 1
   - action: light.turn_off
@@ -752,5 +752,5 @@
     then:
     - action: switch.turn_off
       target:
-        entity_id: switch.footpath_lights
+        entity_id: switch.pc191ha_series_3_8_socket_1
   mode: single

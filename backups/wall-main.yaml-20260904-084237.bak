@@ -345,7 +345,7 @@ views:
               name: Entry Hallway
             - type: custom:button-card
               template: light_tile_orchid
-              entity: light.garage
+              entity: light.garage_2
               name: Garage Hallway
             - type: custom:button-card
               template: light_tile_orchid
@@ -353,7 +353,7 @@ views:
               name: Garage
             - type: custom:button-card
               template: light_tile_orchid
-              entity: light.laundry_laundry_light
+              entity: light.laundry_light_socket_1
               name: Laundry
         - type: vertical-stack
           cards:
@@ -374,7 +374,7 @@ views:
               template:
               - light_tile_orchid
               - light_tile_orchid_3col
-              entity: switch.footpath_lights
+              entity: light.footpath_lights
               name: Footpath
             - type: custom:button-card
               template:
@@ -407,19 +407,19 @@ views:
               template:
               - light_tile_orchid
               - light_tile_orchid_3col
-              entity: switch.car_garage
+              entity: switch.car_garage_socket_1
               name: Car
             - type: custom:button-card
               template:
               - light_tile_orchid
               - light_tile_orchid_3col
-              entity: switch.bike_garage
+              entity: switch.bike_garage_socket_1
               name: Bike
             - type: custom:button-card
               template:
               - light_tile_orchid
               - light_tile_orchid_3col
-              entity: switch.carport_door
+              entity: switch.carport_door_socket_1
               name: Carport
         - type: vertical-stack
           cards:

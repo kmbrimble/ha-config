@@ -140,13 +140,13 @@ car_open:
   sequence:
     - service: switch.turn_on
       target:
-        entity_id: switch.car_garage
+        entity_id: switch.car_garage_socket_1
     - service: script.car_gate
     - delay: "00:00:01"
     - service: script.bike_gate
     - wait_for_trigger:
         - platform: state
-          entity_id: switch.car_garage
+          entity_id: switch.car_garage_socket_1
           to: "on"
           for: "00:00:02"
       timeout: "00:00:10"
@@ -164,18 +164,18 @@ car_close:
     - delay: "00:02:00"
     - service: switch.turn_off
       target:
-        entity_id: switch.car_garage
+        entity_id: switch.car_garage_socket_1
 
 bike_open:
   alias: "Bike Open"
   sequence:
     - service: switch.turn_on
       target:
-        entity_id: switch.bike_garage
+        entity_id: switch.bike_garage_socket_1
     - service: script.bike_gate
     - wait_for_trigger:
         - platform: state
-          entity_id: switch.bike_garage
+          entity_id: switch.bike_garage_socket_1
           to: "on"
           for: "00:00:02"
       timeout: "00:00:10"
@@ -191,4 +191,4 @@ bike_close:
     - delay: "00:02:00"
     - service: switch.turn_off
       target:
-        entity_id: switch.bike_garage
+        entity_id: switch.bike_garage_socket_1
