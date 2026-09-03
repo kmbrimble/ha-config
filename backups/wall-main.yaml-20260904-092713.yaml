@@ -497,9 +497,9 @@ views:
           - type: custom:button-card
             template: climate_tile_room
             variables:
-              temp_entity: sensor.lower_deck_temperature
-              hum_entity: sensor.lower_deck_humidity
-              room_icon: mdi:balcony
+              temp_entity: sensor.network_cupboard_temperature
+              hum_entity: sensor.network_cupboard_humidity
+              room_icon: mdi:ethernet
           - type: custom:button-card
             template: climate_tile_room
             variables:

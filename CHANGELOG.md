@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+### Changed
+- **Network Cupboard sensor moved outdoors and renamed.** The ESP32 environment monitor
+  (ESPHome node `networkcupboardtemp`) now measures the lower deck. In the HA registries the
+  device became **Lower Deck** in the **Lower Deck** area, and its entities were renamed:
+  `sensor.network_cupboard_temperature` → `sensor.lower_deck_temperature` ("Lower Deck Air
+  Temperature") and `sensor.network_cupboard_humidity` → `sensor.lower_deck_humidity`
+  ("Lower Deck Humidity"). The firmware update entity was renamed to match. The ESPHome YAML
+  still carries the old `friendly_name` and "Server Exhaust" sensor names — changing those
+  needs a rebuild and flash from the ESPHome add-on.
+- **WallPanel Climate row** now points at the renamed entities and uses `mdi:balcony` in place
+  of `mdi:ethernet`. (`mdi:deck` does not exist in the bundled MDI set.)
+
+### Added
+- **Kiosk "Outside" card.** A full-width (407x133) `custom:button-card` in the middle pane,
+  directly above the Living Room / Bedroom temperature cards and below the blank space, showing
+  the lower deck temperature on the left and humidity on the right in neon pink `#ff2d95`.
+  Its two halves are pixel-aligned with the centres of the two cards beneath it (8px flex gap
+  matching the horizontal-stack gap), and its height matches theirs exactly.
+- The middle pane's `margin-top: auto` selector moved from `nth-last-child(3)` to
+  `nth-last-child(4)` so the blank space stays above the new card rather than above the
+  temperature cards.
+
+### Removed
+- Long-term statistics for both sensors, via `recorder/clear_statistics` — the accumulated
+  history was indoor cupboard data and not meaningful as outdoor history. Short-term recorder
+  state history was left in place.
+
+
 ## 0.2 - 2026-08-22
 
 Removed the energy cost comparison feature, built the Playwright harness CLAUDE.md had been
