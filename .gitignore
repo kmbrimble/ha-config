@@ -7,3 +7,7 @@ node_modules/
 .env
 test-results/
 playwright-report/
+
+# Never back up .storage registries into the repo - they contain integration credentials
+backups/core.*
+backups/*config_entries*
