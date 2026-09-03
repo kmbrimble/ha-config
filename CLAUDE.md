@@ -265,6 +265,17 @@ from the agent container, so it falls back to the card's styled black background
 Kiosk PC it renders MagicMirror. Do not "fix" it, and do not report the Kiosk as broken because of
 it. The same caveat applies to any future card embedding a LAN-only host.
 
+**The WallPanel's second camera card changes height between runs — this is not a fault either.**
+Card 1 is the `camera.cameras_wallpanel_cycle` picture-entity. The card is sized so a standard
+16:9 camera stream fills the height available to it, so when the cycle reaches the dual-lens
+camera — a much wider view — the card shrinks vertically to keep the stream to scale. Sampling
+every 2s for 3.5 minutes on 2026-09-04 produced exactly two heights, 591px and 293px, and nothing
+else. The geometry test handles this via `VARIABLE_CARD_HEIGHTS` in `dashboard-tests.js`: that
+card's x, y and width are still pinned to the baseline, and its height must be one of the listed
+values, so the card genuinely breaking is still caught. If a camera with a third aspect ratio is
+added to the cycle, add its height to that list — do not turn the entry into "ignore the height",
+and do not re-baseline to whichever value a run happened to catch.
+
 ### Known pre-existing failures the suite deliberately tolerates
 
 `KNOWN_ISSUES` in `test-e2e/dashboard-tests.js` lists real errors that fire on every dashboard,

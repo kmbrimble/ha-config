@@ -24,6 +24,17 @@
   `nth-last-child(4)` so the blank space stays above the new card rather than above the
   temperature cards.
 
+### Fixed
+- **The WallPanel geometry test no longer false-fails on the camera cycle card.**
+  `camera.cameras_wallpanel_cycle` card 1 legitimately renders at two heights — the card is sized
+  so a standard 16:9 stream fills the available height, so the dual-lens camera's much wider view
+  shrinks it vertically to keep scale. Sampling every 2s for 3.5 minutes produced exactly 591px
+  and 293px and nothing else. `VARIABLE_CARD_HEIGHTS` in `dashboard-tests.js` now pins that card's
+  x, y and width to the baseline as before while requiring its height to be one of those two
+  values, so a card that genuinely breaks still fails. Verified 8/8 green across both heights, and
+  verified failing (on the height assertion only, not on "cards moved") with a deliberately wrong
+  allow-list.
+
 ### Removed
 - Long-term statistics for both sensors, via `recorder/clear_statistics` — the accumulated
   history was indoor cupboard data and not meaningful as outdoor history. Short-term recorder
