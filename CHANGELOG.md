@@ -17,7 +17,7 @@
 ### Added
 - **Kiosk "Outside" card.** A full-width (407x133) `custom:button-card` in the middle pane,
   directly above the Living Room / Bedroom temperature cards and below the blank space, showing
-  the lower deck temperature on the left and humidity on the right in neon pink `#ff2d95`.
+  the lower deck temperature on the left and humidity on the right in neon pink `#ff8ad9`.
   Its two halves are pixel-aligned with the centres of the two cards beneath it (8px flex gap
   matching the horizontal-stack gap), and its height matches theirs exactly.
 - The middle pane's `margin-top: auto` selector moved from `nth-last-child(3)` to

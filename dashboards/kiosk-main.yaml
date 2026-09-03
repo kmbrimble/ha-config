@@ -237,7 +237,7 @@ views:
               var hs = states[variables.hum_entity];
               var hum = (hs && !isNaN(Number(hs.state))) ? Number(hs.state).toFixed(0) + ' %' : '--';
               var temp = !isNaN(Number(entity.state)) ? Number(entity.state).toFixed(1) + ' °C' : '--';
-              return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:4% 0; gap:3%; color:#ff2d95; line-height:1;">'
+              return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:4% 0; gap:3%; color:#ff8ad9; line-height:1;">'
                 + '<span style="font-size:6.4cqw; font-weight:400;">Outside</span>'
                 + '<div style="display:flex; width:100%; gap:8px; align-items:baseline;">'
                 + '<span style="flex:1 1 0; text-align:center; font-size:11.3cqw; font-weight:700;">' + temp + '</span>'
