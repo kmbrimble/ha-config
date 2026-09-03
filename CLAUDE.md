@@ -9,6 +9,30 @@ Use British/Australian English in all writing and UI text.
 rebuild. The "deploy" step is copying a file onto a running Home Assistant instance. Read the
 Deploy and verify section carefully before changing anything.
 
+## Rule 0 — talk to HA over the API, never the browser
+
+A long-lived access token is in `/projects/ha-config/.env` as `HA_TOKEN` (gitignored) and this
+container reaches HA directly. **Do not** use browser automation (Claude in Chrome, the in-app
+browser, Playwright ad hoc) to read state, call services, inspect logs or check config — every
+browser access costs the user a manual approval. Load the token and use curl/websocket instead:
+
+```bash
+set -a; . /projects/ha-config/.env; set +a
+# REST
+curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/states | jq .
+curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" \
+  -d '{"entity_id":"light.x"}' http://192.168.0.21:8123/api/services/light/turn_on
+# WebSocket (error log, lovelace config, entity/device registries — things REST cannot do)
+echo '[{"type":"system_log/list"}]' | python3 /projects/ha-config/tools/haws.py
+```
+
+`tools/haws.py` is a stdlib-only HA websocket client (no pip needed): it reads a JSON **array** of
+commands on stdin, authenticates, and prints one result object per command in order. Both paths
+verified working 2026-09-04.
+
+The only legitimate browser use is *visual* verification of a rendered dashboard — and the
+Playwright suite in `test-e2e/` covers that; ask before opening a browser by hand.
+
 ## Environment
 
 | Item | Value |
