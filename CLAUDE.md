@@ -425,13 +425,14 @@ Those cards are still covered by the render / no-error-card / console-clean test
 geometry is unpinned. The WallPanel dashboard has no conditional cards and its 39-card baseline is
 unaffected.
 
-One residual, verified 2026-09-04 against `kiosk-candidate` with the condition forced true: when
-Kieren is away and T is home the conditional block renders **three** cards and pushes the whole
-right-hand column down 78px, taking `document.documentElement.scrollHeight` to 1498 against a
-1440px display. The T-away block renders two and shifts nothing. So a Kiosk geometry failure in
-that one presence state is now a **real** signal rather than baseline noise — the column genuinely
-overflows the bottom of the screen there. The suite will not find it on its own: it asserts
-*horizontal* overflow only.
+Both conditional blocks render two cards each, so the remaining cards sit at identical
+coordinates in every presence state — verified 2026-09-04 against `kiosk-candidate` with the
+condition forced true: same boxes and `scrollHeight` 1440 either way. That only became true in
+`ff3e254`. Before it, the Kieren-away block carried a stray third card that pushed the column down
+78px to `scrollHeight` 1498 on a 1440px display, clipping the bottom card, and the suite never saw
+it. **Keep the two blocks symmetric.** If a card is added to one and not the other the asymmetry
+comes back, and nothing here will catch it: the suite asserts *horizontal* overflow only, and the
+conditional cards themselves are no longer pinned by the baseline.
 
 ## Non-negotiable constraints
 

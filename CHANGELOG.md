@@ -13,9 +13,21 @@
   untouched. The excluded cards are still asserted on by the render / no-error-card /
   console-clean test. The settle wait still counts them, so a late-arriving conditional card is
   waited out before the boxes are read.
-  - Found while doing this: with Kieren away and T home the conditional block renders three cards
-    and pushes the right-hand column down 78px, giving `scrollHeight` 1498 on a 1440px display.
-    Not fixed here. The suite asserts horizontal overflow only, so it does not catch it.
+  - Found while doing this: with Kieren away and T home the conditional block rendered three cards
+    and pushed the right-hand column down 78px, giving `scrollHeight` 1498 on a 1440px display.
+    Fixed separately in `ff3e254`; see below.
+
+### Fixed
+- **The Kiosk right-hand column no longer overflows the display when Kieren is away and T is
+  home.** The Kieren-away `conditional:` block carried a third `person.t` button-card - `name:
+  'T:'` and the `aspect_ratio: 1/1` map fused into one card - alongside Kieren's own name bar and
+  map, a leftover from building the block by copying the T-away one. The symmetric T-away block
+  always had the correct two cards. Removing it drops `scrollHeight` from 1498 to 1440 on the
+  1440px display and leaves the non-conditional cards at identical coordinates in all three
+  presence states, so the Kiosk geometry baseline is now presence-invariant rather than merely
+  count-invariant. No re-baseline was needed - conditional cards are excluded from it. The suite
+  still asserts horizontal overflow only, so an asymmetry reintroduced between the two blocks
+  would not be caught.
 
 ### Added
 - **WallPanel motion alert while the house is empty.** New automation
