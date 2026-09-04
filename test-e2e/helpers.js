@@ -72,6 +72,27 @@ const DEEP_QUERY_ALL = `
 `;
 
 /**
+ * True if `el` is inside a `hui-conditional-card`, walking up through shadow boundaries.
+ *
+ * A conditional card is absent from the DOM entirely when its conditions are false and present
+ * when they are true, so the cards inside one make the card COUNT a function of live state rather
+ * than of the dashboard YAML. On the Kiosk that state is who is home. Those cards are therefore
+ * excluded from the geometry baseline (see cardBoxes) — they are still covered by the
+ * render/no-error-card/console assertions, which do not care how many cards there are.
+ */
+const IN_CONDITIONAL = `
+  (el) => {
+    let n = el;
+    while (n) {
+      if (n.nodeType === 1 && n.tagName.toLowerCase() === 'hui-conditional-card') return true;
+      n = n.parentNode;
+      if (n && n.nodeType === 11 && n.host) n = n.host;
+    }
+    return false;
+  }
+`;
+
+/**
  * Load a dashboard and wait for it to actually settle. Returns collected console errors.
  *
  * Errors are captured from page load onward, so anything the dashboard logs while rendering is
@@ -144,19 +165,32 @@ async function openDashboard(page, urlPath) {
  * This is the collateral-damage detector: a change meant to touch one card that silently shifts
  * another shows up here. Live sensor values do not move card geometry in these layouts, so the
  * boxes are stable between runs even though the text inside them is not.
+ *
+ * Cards inside a `hui-conditional-card` are EXCLUDED. They exist in the DOM only while their
+ * conditions hold, so including them made the baseline a function of live state — on the Kiosk,
+ * of who was home — and the suite failed `card count changed` purely because presence had moved
+ * since the baseline was captured. Nothing is silently dropped: those cards are still asserted on
+ * by the render/no-error-card/console-clean test. See CLAUDE.md, Code review -> Test reality, for
+ * what this does and does not buy.
+ *
+ * The settle wait in openDashboard deliberately still counts them, so a conditional card that
+ * arrives late is waited out before the boxes are read.
  */
 async function cardBoxes(page) {
-  return page.evaluate((deepQuery) => {
-    return eval(deepQuery)('ha-card').map((el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        x: Math.round(r.x),
-        y: Math.round(r.y),
-        w: Math.round(r.width),
-        h: Math.round(r.height),
-      };
-    });
-  }, DEEP_QUERY_ALL);
+  return page.evaluate(([deepQuery, inConditional]) => {
+    const isConditional = eval(inConditional);
+    return eval(deepQuery)('ha-card')
+      .filter((el) => !isConditional(el))
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+        };
+      });
+  }, [DEEP_QUERY_ALL, IN_CONDITIONAL]);
 }
 
-module.exports = { HA_URL, haToken, authenticate, openDashboard, cardBoxes, DEEP_QUERY_ALL };
+module.exports = { HA_URL, haToken, authenticate, openDashboard, cardBoxes, DEEP_QUERY_ALL, IN_CONDITIONAL };

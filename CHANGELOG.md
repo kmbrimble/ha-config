@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Changed
+- **Cards inside `conditional:` blocks are excluded from the card-geometry baseline.**
+  `IN_CONDITIONAL` in `test-e2e/helpers.js` walks up through shadow boundaries and `cardBoxes()`
+  filters on it. HA removes a conditional card from the DOM when its conditions are false, so the
+  Kiosk's two presence-keyed `conditional:` blocks made the baseline a function of who was home —
+  it held 15 cards and the suite failed `card count changed (15 -> 13)` on both `kiosk-candidate`
+  and `kiosk-main` with both people home, with nothing actually broken. Kiosk baselines
+  re-captured at 13 cards; the WallPanel dashboard has no conditional cards and its baseline is
+  untouched. The excluded cards are still asserted on by the render / no-error-card /
+  console-clean test. The settle wait still counts them, so a late-arriving conditional card is
+  waited out before the boxes are read.
+  - Found while doing this: with Kieren away and T home the conditional block renders three cards
+    and pushes the right-hand column down 78px, giving `scrollHeight` 1498 on a 1440px display.
+    Not fixed here. The suite asserts horizontal overflow only, so it does not catch it.
+
 ### Added
 - **WallPanel motion alert while the house is empty.** New automation
   `automation.security_wallpanel_motion_while_both_away` sends a time-sensitive push

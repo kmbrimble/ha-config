@@ -1,7 +1,9 @@
 # ha-config — project context
 
-Version-controlled Home Assistant configuration, currently scoped to the two display-only
-dashboards: the **Kiosk** dashboard and the **WallPanel** dashboard.
+Version-controlled Home Assistant configuration for the instance at `192.168.0.21`. It holds the
+two YAML-mode display dashboards (**Kiosk** and **WallPanel**) plus `configuration.yaml`,
+`automations.yaml`, `scripts.yaml`, `scenes.yaml` and `packages/`. The other four dashboards on
+this instance are storage-mode and out of scope (constraint #3).
 
 Use British/Australian English in all writing and UI text.
 
@@ -37,7 +39,8 @@ Playwright suite in `test-e2e/` covers that; ask before opening a browser by han
 
 | Item | Value |
 |---|---|
-| HA host | `192.168.0.21:8123` (Home Assistant OS 18.2, Core 2026.8.1) |
+| HA host | `192.168.0.21:8123` (Home Assistant OS 18.2, Core 2026.9.0) |
+| Public URL | `https://ha.kiztigs.com` — Cloudflare tunnel, no edge auth (see Code review) |
 | Timezone | Australia/Brisbane |
 | Repo (in container) | `/projects/ha-config` — **source of truth** |
 | Live HA config (in container) | `/ha-config` — SMB mount of HA's `/config` share |
@@ -52,6 +55,13 @@ the deploy step.
 
 ```
 /projects/ha-config/
+├── configuration.yaml          # core HA config — deployed to the mount, see constraint #1
+├── automations.yaml            # 28 automations; stays UI-editable
+├── scripts.yaml                # 17 scripts (doors, gates, blinds)
+├── scenes.yaml
+├── packages/                   # fuel_price_trends.yaml, wallpanel_motion_alert.yaml
+├── tools/haws.py               # stdlib-only HA websocket client (Rule 0)
+├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
 │   ├── kiosk-candidate.yaml    # scratch copy used for testing
@@ -179,6 +189,13 @@ above), and it no longer costs a display blink — though kiosk-mode itself live
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
 - `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
 
+This is the **only** automated harness in the repo, and it covers exactly one thing: that the two
+YAML dashboards render correctly at their display's resolution against the live HA instance.
+Nothing else here has a test — `configuration.yaml`, `automations.yaml`, `scripts.yaml` and
+`packages/` are covered only by HA's config check, which validates schema and not behaviour. What
+the suite does and does not actually exercise is in **Code review → Test reality**; read that
+before treating a green run as proof.
+
 ### Each dashboard is pinned to its display's resolution
 
 The two dashboards are laid out for one display each and are **only correct at that display's
@@ -211,7 +228,8 @@ without exposing it: `grep -q '^HA_TOKEN=' .env && echo found`.
 This is implemented once in `test-e2e/helpers.js` (`authenticate()`) — use it rather than
 re-injecting the token in a spec.
 
-**RESOLVED — the `hassTokens` shape above is correct for Core 2026.8.1** (verified 2026-08-22).
+**RESOLVED — the `hassTokens` shape above is correct** (verified 2026-08-22 on Core 2026.8.1, and
+still authenticating on Core 2026.9.0 as of 2026-09-04).
 Two things about the injection that are not obvious:
 
 - **Wrap the `localStorage.setItem` in try/catch.** `addInitScript` runs in *every* frame, and the
@@ -240,7 +258,9 @@ All of these are implemented. Two mechanics worth knowing before editing the sui
   holds every card's rounded box; the suite writes it on first run (and skips), then compares on
   every run after. Card geometry is stable between runs even though the values inside the cards
   are not. After an *intended* layout change, re-run with `UPDATE_BASELINE=1` and commit the new
-  baseline — the diff in that file is a readable record of what moved.
+  baseline — the diff in that file is a readable record of what moved. Cards inside a
+  `conditional:` block are excluded from it; see Code review -> Test reality for why and for what
+  that leaves uncovered.
 - **Nothing in `page.evaluate` can use `document.querySelectorAll` or `body.innerText`.** Every HA
   card lives inside nested shadow roots, which neither crosses — an `innerText` check for
   "Entity not found" silently passes on a page full of them. Use Playwright locators (which
@@ -300,6 +320,119 @@ geometry, extend the settle signature to cover it too.**
 One caveat: the first dashboard load after an HA restart can still fail, because the frontend is
 cold and HA is still warming. Re-run rather than chasing it.
 
+## Code review
+
+Context for `code-diff-reviewer`, `code-audit` and `code-security-audit`. All three are advisory,
+repo-scoped, and cannot see any of what follows.
+
+### Exposure — 2, authenticated internet-facing
+
+HA is published at `https://ha.kiztigs.com` through a **remotely-managed Cloudflare tunnel** (the
+ingress config lives in the Cloudflare dashboard, not in any repo) onto `http://192.168.0.21:8123`.
+That is also HA's own `external_url`. There is **no Cloudflare Access policy in front of it** —
+HA's login is the only gate. Verified from outside 2026-09-04: `GET /` returns the HA login
+frontend with no Access redirect, `GET /api/states` returns 401, `/auth/providers` offers only
+`homeassistant`.
+
+The `trusted_networks` bypass for the Kiosk PC (`192.168.0.16`, `allow_bypass_login: true`) is not
+reachable from the internet, because no `http:` section is configured anywhere, so
+`use_x_forwarded_for` is at its default of false and HA matches on the peer IP. **Adding an `http:`
+block with `use_x_forwarded_for`/`trusted_proxies`, or putting the tunnel connector's address into
+`trusted_networks`, turns this into exposure 3 (unauthenticated internet-facing) in one line.**
+That is what constraint #4 protects.
+
+Everything in this repo deploys onto that instance. There is no dev-only surface here.
+
+### Modules that own data users rely on
+
+Most of this repo is display YAML where a bug is a bad screen. These are the exceptions:
+
+- **`configuration.yaml` → the `template:` trigger sensor `sensor.total_grid_energy`**
+  (`unique_id: emerald_accumulator_kwh`). It **accumulates**: each MQTT pulse message adds
+  `pulses / 1000` to its own previous state, `state_class: total_increasing`, currently ~3768 kWh.
+  A wrong divisor, a second trigger, or anything that makes it reset corrupts or double-counts the
+  household energy history in long-term statistics, and it cannot be recomputed from source. Score
+  data integrity **3** for any change touching it.
+- **`configuration.yaml` → `recorder: db_url: !secret mariadb_recorder_url`** — long-term
+  statistics in an external MariaDB. `recorder:` changes (excludes, purge) destroy history
+  irreversibly.
+- **`configuration.yaml` → `sensor.dining_table_energy`** — wired into HA's Energy dashboard device
+  list, so it is user-facing accounting, not decoration.
+- **`packages/fuel_price_trends.yaml`** — four trigger-based template sensors that **latch** values
+  and restore them across restarts. The `condition:` on each looks like defensive padding and is
+  load-bearing: weaken the `previous_price` one and every 2-hourly `qld_fuel` poll latches the
+  current price as the previous one; weaken `last_known_price` and it follows the source down to
+  `unavailable`. The file's header documents both, plus why `POST /api/states` silently fails to
+  correct them.
+- **`automations.yaml` and `scripts.yaml`** are not data, but they actuate garage, car and bike
+  doors, gates and locks. Physical consequences, no undo.
+
+`dashboards/*.yaml` and `test-e2e/` own nothing — except `test-e2e/baselines/*.json`, where
+re-baselining without an intended layout change silently disables the collateral-damage detector.
+
+### Infrastructure this repo depends on but does not contain
+
+None of the following is in this repository. A finding whose reasoning is "nothing here
+defines/implements X" against anything on this list belongs in `UNVERIFIABLE FROM THIS REPO`, and
+`score.py --infra` applies.
+
+| Depended on | Where it actually lives |
+|---|---|
+| `!secret mariadb_recorder_url` | `/config/secrets.yaml` on the HA host — gitignored by design, never committed |
+| `themes: !include_dir_merge_named themes` | `/config/themes/` (catppuccin) |
+| Every entity the dashboards and automations reference | integration config entries + `.storage/core.entity_registry` |
+| `/hacsfiles/*.js` in `lovelace: resources:` and `extra_module_url` | HACS-installed under `/config/www/community/` |
+| `platform: smartir`, and the `qld_fuel`, `tuya_local`, `browser_mod`, `nectr`, `sun2`, `spook` (etc.) entities | `/config/custom_components/` — see Context notes for the full list |
+| The MQTT broker, and the Emerald meter publishing `home/emerald/#` | a broker config entry plus a physical device |
+| MariaDB | a separate container |
+| TLS, the public hostname, ingress | the Cloudflare tunnel, configured in the Cloudflare dashboard |
+| `HA_TOKEN` for the test suite | `/projects/ha-config/.env`, gitignored |
+| The four storage-mode dashboards and all UI helpers | `.storage/` — never hand-edited (constraint #3) |
+
+**Entity IDs cannot be derived from this repo**, and this is the trap most likely to produce a
+confident false positive. `configuration.yaml` defines an MQTT sensor named `Grid Power Usage` —
+which by HA's naming convention would be `sensor.grid_power_usage` — and the `statistics` sensor
+directly below it references `sensor.emerald_grid_power_usage`. That reads like a dangling
+reference and is not one: the entity was renamed in the UI, so `.storage/core.entity_registry` maps
+`unique_id: emerald_power_watts` onto `sensor.emerald_grid_power_usage`. Resolve entity IDs against
+the live instance (`GET /api/states`, or `{"type": "config/entity_registry/list"}` over the
+websocket) before reporting a broken reference.
+
+### Test reality
+
+`npm run test:e2e` is the only automated harness. It covers the two YAML dashboards, as rendered,
+and nothing else. `configuration.yaml`, `automations.yaml` (28 automations), `scripts.yaml` (17
+scripts) and `packages/` have **no test of any kind** — HA's config check validates schema, not
+behaviour. Score test-coverage gap **3** for a change to any of those.
+
+Within the dashboards, a run is one page load in whatever state the house happens to be in, so
+every branch inside a card template is happy-path-only:
+
+- The fuel cards branch three ways on price (live / italicised stale value from
+  `*_last_known_price` / em dash when there is nothing) and three ways on the trend arrow (up /
+  down / none). A run sees whichever branch `qld_fuel` is serving at that moment; the stale and
+  no-data branches have never been exercised by a test.
+- The person cards branch on GPS coordinates being present, with a `NO GPS DATA` fallback that has
+  never rendered under test.
+- The geometry baseline cannot see any of this — an em dash and a price occupy the same box.
+
+**Cards inside `conditional:` are excluded from the geometry baseline** — `IN_CONDITIONAL` in
+`test-e2e/helpers.js`, added 2026-09-04. HA drops a conditional card out of the DOM entirely when
+its conditions are false, so the Kiosk's two `conditional:` blocks (keyed on `person.kieren` and
+`person.t`) made the card count a function of who was home, and the baseline failed
+`card count changed` on presence alone. The Kiosk baseline is 13 cards in every presence state now.
+Those cards are still covered by the render / no-error-card / console-clean test; only their
+geometry is unpinned. The WallPanel dashboard has no conditional cards and its 39-card baseline is
+unaffected.
+
+One residual, verified 2026-09-04 against `kiosk-candidate` with the condition forced true: when
+Kieren is away and T is home the conditional block renders **three** cards and pushes the whole
+right-hand column down 78px, taking `document.documentElement.scrollHeight` to 1498 against a
+1440px display. The T-away block renders two and shifts nothing. So a Kiosk geometry failure in
+that one presence state is now a **real** signal rather than baseline noise — the column genuinely
+overflows the bottom of the screen there. The suite will not find it on its own: it asserts
+*horizontal* overflow only.
+
 ## Non-negotiable constraints
 
 1. **Direct edits to live HA config files are allowed, gated by backup-validate-retry-restore.**
@@ -337,6 +470,13 @@ cold and HA is still warming. Re-run rather than chasing it.
    user themselves.)
 4. **Never touch `trusted_networks` or any auth configuration.**
 5. **The live dashboard file is only ever written from a green candidate.** No direct edits.
+6. **`card-mod` stays under `frontend: extra_module_url`, never `lovelace: resources:`.**
+   Implemented in `configuration.yaml`, with the reason inline. It looks misplaced next to the
+   card modules in `resources:`; moving it there left the Kiosk bistable — see "Where a frontend
+   module goes" below.
+7. **The `condition:` on each sensor in `packages/fuel_price_trends.yaml` is load-bearing.** They
+   read as redundant guards against `unknown`/`unavailable`; removing either silently corrupts the
+   latched price the Kiosk shows. That file's header says which and why.
 
 ## Pre-change backup
 
@@ -432,8 +572,9 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
 ## Context notes
 
 - Config uses `packages: !include_dir_named packages`, so configuration is already modular.
-- `custom_components` present: `aemo_nem`, `blueiris`, `hacs`, `hass_agent`, `meross_lan`,
-  `presence_simulation`, `smartir`, `smartlife`, `spook`, `spook_inverse`, `sun2`, `tuya_local`.
+- `custom_components` present on the mount, none of them in this repo (verified 2026-09-04):
+  `aemo_nem`, `blueiris`, `browser_mod`, `hacs`, `hass_agent`, `meross_lan`, `nectr`,
+  `presence_simulation`, `qld_fuel`, `smartir`, `smartlife`, `spook`, `sun2`, `tuya_local`.
   Custom cards used by the dashboards come from HACS — if a card is missing at render time the
   cause is usually a missing HACS resource, not a YAML error.
 - The `blueiris` custom component is scheduled for retirement as part of the Frigate migration.
