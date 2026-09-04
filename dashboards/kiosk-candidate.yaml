@@ -312,6 +312,7 @@ views:
           show_icon: false
           variables:
             prev_entity: sensor.kenmore_fuel_previous_price
+            last_entity: sensor.kenmore_fuel_last_known_price
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -345,12 +346,24 @@ views:
           custom_fields:
             price: |
               [[[
-                var cur = Number(entity.state);
-                // qld_fuel drops to unknown/unavailable periodically; without this the card
-                // rendered "$NaN" on the Kiosk until the next successful poll.
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+
+                // qld_fuel drops to unknown/unavailable periodically (e.g. 2 Sep, 01:20-05:20
+                // UTC). Rather than blanking the card, fall back to the last price that was
+                // actually read and render it in ITALICS to flag it as possibly stale.
+                var lastState = states[variables.last_entity];
+                var last = lastState ? Number(lastState.state) : NaN;
+                var cur = live ? raw : last;
+
+                // Em dash is now only for the genuine no-data case: nothing live AND nothing
+                // stored. Before this the card rendered "$NaN" on every dropout.
                 if (!isFinite(cur) || cur <= 0) return '\u2014';
+
                 var priceStr = '$' + (cur / 100).toFixed(3);
-                // prev_entity now holds the price BEFORE the last REAL change (see
+                if (!live) priceStr = '<span style="font-style:italic;">' + priceStr + '</span>';
+
+                // prev_entity holds the price BEFORE the last REAL change (see
                 // packages/fuel_price_trends.yaml), so this arrow persists between changes
                 // instead of vanishing on every attribute-only refresh.
                 var prevState = states[variables.prev_entity];
@@ -365,7 +378,22 @@ views:
               ]]]
             ts: |
               [[[
-                var d = new Date(entity.last_changed);
+                // While the sensor is down its last_changed is the moment it WENT down, which
+                // would read as a fresh price sitting under an italicised stale one. Point at
+                // the last-known-price sensor instead, whose last_changed only moves on a real
+                // price change - so this line keeps meaning "when the price last changed".
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+                var src = live ? entity : states[variables.last_entity];
+                if (!src) return '';
+                // source_last_changed is only on the fallback sensor, and is the source's own
+                // last_changed - so a seeded value reports when the price really moved, not
+                // when it was seeded. Fall back to last_changed if the attribute is missing.
+                var when = (!live && src.attributes && src.attributes.source_last_changed)
+                  ? src.attributes.source_last_changed
+                  : src.last_changed;
+                if (!when) return '';
+                var d = new Date(when);
                 var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
                 return 'Updated ' + d.toLocaleString('en-AU', opts);
               ]]]
@@ -376,6 +404,7 @@ views:
           show_icon: false
           variables:
             prev_entity: sensor.sunnybank_fuel_previous_price
+            last_entity: sensor.sunnybank_fuel_last_known_price
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -409,12 +438,24 @@ views:
           custom_fields:
             price: |
               [[[
-                var cur = Number(entity.state);
-                // qld_fuel drops to unknown/unavailable periodically; without this the card
-                // rendered "$NaN" on the Kiosk until the next successful poll.
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+
+                // qld_fuel drops to unknown/unavailable periodically (e.g. 2 Sep, 01:20-05:20
+                // UTC). Rather than blanking the card, fall back to the last price that was
+                // actually read and render it in ITALICS to flag it as possibly stale.
+                var lastState = states[variables.last_entity];
+                var last = lastState ? Number(lastState.state) : NaN;
+                var cur = live ? raw : last;
+
+                // Em dash is now only for the genuine no-data case: nothing live AND nothing
+                // stored. Before this the card rendered "$NaN" on every dropout.
                 if (!isFinite(cur) || cur <= 0) return '\u2014';
+
                 var priceStr = '$' + (cur / 100).toFixed(3);
-                // prev_entity now holds the price BEFORE the last REAL change (see
+                if (!live) priceStr = '<span style="font-style:italic;">' + priceStr + '</span>';
+
+                // prev_entity holds the price BEFORE the last REAL change (see
                 // packages/fuel_price_trends.yaml), so this arrow persists between changes
                 // instead of vanishing on every attribute-only refresh.
                 var prevState = states[variables.prev_entity];
@@ -429,7 +470,22 @@ views:
               ]]]
             ts: |
               [[[
-                var d = new Date(entity.last_changed);
+                // While the sensor is down its last_changed is the moment it WENT down, which
+                // would read as a fresh price sitting under an italicised stale one. Point at
+                // the last-known-price sensor instead, whose last_changed only moves on a real
+                // price change - so this line keeps meaning "when the price last changed".
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+                var src = live ? entity : states[variables.last_entity];
+                if (!src) return '';
+                // source_last_changed is only on the fallback sensor, and is the source's own
+                // last_changed - so a seeded value reports when the price really moved, not
+                // when it was seeded. Fall back to last_changed if the attribute is missing.
+                var when = (!live && src.attributes && src.attributes.source_last_changed)
+                  ? src.attributes.source_last_changed
+                  : src.last_changed;
+                if (!when) return '';
+                var d = new Date(when);
                 var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
                 return 'Updated ' + d.toLocaleString('en-AU', opts);
               ]]]

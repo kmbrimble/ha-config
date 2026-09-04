@@ -1,51 +1,182 @@
-# Latches the price each station was at BEFORE its most recent REAL price change, so the
-# Kiosk fuel cards can draw a trend arrow that persists between changes.
+# Support sensors for the Kiosk fuel price cards. Two per station:
 #
-# WHY THE CONDITION EXISTS (do not remove it):
+#   *_previous_price    the price BEFORE the last real change  -> drives the trend arrow
+#   *_last_known_price  the last price actually read           -> drives the stale-price fallback
+#
+# WHY BOTH CARRY A CONDITION (do not remove them):
 # The qld_fuel integration rewrites these sensors roughly every 2 hours, and it rewrites the
 # attributes (7_day_average, days_since_7_day_low, ...) even when the price itself has not
-# moved. A bare `state` trigger fires on those attribute-only writes too, so the previous
-# version of this package latched the CURRENT price as the "previous" price and the trend
-# arrow on the Kiosk vanished until the next actual change. Confirmed 2026-09-04: both
-# previous-price sensors were sitting at exactly the current price.
+# moved. A bare `state` trigger fires on those attribute-only writes too. It also drops the
+# sensors to unknown/unavailable periodically (e.g. 2026-09-02 01:20-05:20 UTC).
 #
-# The condition also ignores transitions in and out of unavailable/unknown, which the API
-# drops into periodically (e.g. 2026-09-02 01:20-05:20 UTC). Without that,
-# 221.9 -> unavailable -> 221.9 would be latched as two changes and would blank the arrow.
+#   previous_price   needs from != to, both numeric, or every poll latches the CURRENT price as
+#                    the "previous" one and the Kiosk trend arrow disappears until the next real
+#                    change. Requiring both sides numeric also means a transition through
+#                    unavailable (221.9 -> unavailable -> 221.9) is not counted as two changes.
+#   last_known_price needs `to` numeric only - it must latch on every successful read, including
+#                    reads that repeat the same price, and must NOT follow the sensor down when
+#                    the API drops out. That is the whole point of it.
+#
+# SEEDING - read this before trying to correct one of these by hand.
+# These are trigger-based template sensors, so they restore their last state across a reload or
+# restart. What restores is the last value THE ENTITY ITSELF WROTE. `POST /api/states` writes
+# straight into the state machine, bypassing the entity, so a value set that way looks right
+# until the next `homeassistant.reload_all` and then silently reverts. Proven on 2026-09-04:
+# Kenmore was POSTed to 221.9 at 10:08 AEST and came back as 224.9 after a reload at 12:19,
+# while Sunnybank - which had latched 217.9 through its own trigger at 11:54 - restored intact.
+#
+# So each sensor also listens for a `fuel_price_seed` event addressed to it by unique_id. Firing
+# that event makes the ENTITY write the value, which is what persists. To correct one:
+#
+#   curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" \
+#     -d '{"sensor": "kenmore_fuel_previous_price", "value": 221.9}' \
+#     http://192.168.0.21:8123/api/events/fuel_price_seed
+#
+# Never hand-edit .storage/core.restore_state to do this.
 
 template:
+  # ---------------------------------------------------------------- Kenmore
   - trigger:
       - trigger: state
+        id: change
         entity_id: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+      - trigger: event
+        id: seed
+        event_type: fuel_price_seed
+        event_data:
+          sensor: kenmore_fuel_previous_price
     condition:
       - condition: template
         value_template: >
-          {% set f = trigger.from_state.state if trigger.from_state else none %}
-          {% set t = trigger.to_state.state if trigger.to_state else none %}
-          {{ f not in [none, 'unknown', 'unavailable']
-             and t not in [none, 'unknown', 'unavailable']
-             and f | float(0) > 0 and t | float(0) > 0
-             and f | float != t | float }}
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float(0) > 0 }}
+          {% else %}
+            {% set f = trigger.from_state.state if trigger.from_state else none %}
+            {% set t = trigger.to_state.state if trigger.to_state else none %}
+            {{ f not in [none, 'unknown', 'unavailable']
+               and t not in [none, 'unknown', 'unavailable']
+               and f | float(0) > 0 and t | float(0) > 0
+               and f | float != t | float }}
+          {% endif %}
     sensor:
       - name: Kenmore Fuel Previous Price
         unique_id: kenmore_fuel_previous_price
         unit_of_measurement: "¢/L"
-        state: "{{ trigger.from_state.state | float }}"
+        state: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float }}
+          {% else %}
+            {{ trigger.from_state.state | float }}
+          {% endif %}
 
   - trigger:
       - trigger: state
-        entity_id: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+        id: change
+        entity_id: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+      - trigger: event
+        id: seed
+        event_type: fuel_price_seed
+        event_data:
+          sensor: kenmore_fuel_last_known_price
     condition:
       - condition: template
         value_template: >
-          {% set f = trigger.from_state.state if trigger.from_state else none %}
-          {% set t = trigger.to_state.state if trigger.to_state else none %}
-          {{ f not in [none, 'unknown', 'unavailable']
-             and t not in [none, 'unknown', 'unavailable']
-             and f | float(0) > 0 and t | float(0) > 0
-             and f | float != t | float }}
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float(0) > 0 }}
+          {% else %}
+            {% set t = trigger.to_state.state if trigger.to_state else none %}
+            {{ t not in [none, 'unknown', 'unavailable'] and t | float(0) > 0 }}
+          {% endif %}
+    sensor:
+      - name: Kenmore Fuel Last Known Price
+        unique_id: kenmore_fuel_last_known_price
+        unit_of_measurement: "¢/L"
+        state: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float }}
+          {% else %}
+            {{ trigger.to_state.state | float }}
+          {% endif %}
+        attributes:
+          # When the Kiosk card falls back to this sensor during a dropout it needs the time the
+          # PRICE last changed, not this entity's own last_changed - which is the seed moment for
+          # a seeded value, and would read as a fresh price under an italicised stale one.
+          source_last_changed: >
+            {% if trigger.id == 'seed' %}
+              {{ trigger.event.data.changed }}
+            {% else %}
+              {{ trigger.to_state.last_changed.isoformat() }}
+            {% endif %}
+
+  # ---------------------------------------------------------------- Sunnybank
+  - trigger:
+      - trigger: state
+        id: change
+        entity_id: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+      - trigger: event
+        id: seed
+        event_type: fuel_price_seed
+        event_data:
+          sensor: sunnybank_fuel_previous_price
+    condition:
+      - condition: template
+        value_template: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float(0) > 0 }}
+          {% else %}
+            {% set f = trigger.from_state.state if trigger.from_state else none %}
+            {% set t = trigger.to_state.state if trigger.to_state else none %}
+            {{ f not in [none, 'unknown', 'unavailable']
+               and t not in [none, 'unknown', 'unavailable']
+               and f | float(0) > 0 and t | float(0) > 0
+               and f | float != t | float }}
+          {% endif %}
     sensor:
       - name: Sunnybank Fuel Previous Price
         unique_id: sunnybank_fuel_previous_price
         unit_of_measurement: "¢/L"
-        state: "{{ trigger.from_state.state | float }}"
+        state: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float }}
+          {% else %}
+            {{ trigger.from_state.state | float }}
+          {% endif %}
+
+  - trigger:
+      - trigger: state
+        id: change
+        entity_id: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+      - trigger: event
+        id: seed
+        event_type: fuel_price_seed
+        event_data:
+          sensor: sunnybank_fuel_last_known_price
+    condition:
+      - condition: template
+        value_template: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float(0) > 0 }}
+          {% else %}
+            {% set t = trigger.to_state.state if trigger.to_state else none %}
+            {{ t not in [none, 'unknown', 'unavailable'] and t | float(0) > 0 }}
+          {% endif %}
+    sensor:
+      - name: Sunnybank Fuel Last Known Price
+        unique_id: sunnybank_fuel_last_known_price
+        unit_of_measurement: "¢/L"
+        state: >
+          {% if trigger.id == 'seed' %}
+            {{ trigger.event.data.value | float }}
+          {% else %}
+            {{ trigger.to_state.state | float }}
+          {% endif %}
+        attributes:
+          # When the Kiosk card falls back to this sensor during a dropout it needs the time the
+          # PRICE last changed, not this entity's own last_changed - which is the seed moment for
+          # a seeded value, and would read as a fresh price under an italicised stale one.
+          source_last_changed: >
+            {% if trigger.id == 'seed' %}
+              {{ trigger.event.data.changed }}
+            {% else %}
+              {{ trigger.to_state.last_changed.isoformat() }}
+            {% endif %}

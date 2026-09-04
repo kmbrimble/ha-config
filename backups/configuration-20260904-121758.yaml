@@ -58,10 +58,13 @@ lovelace:
       type: module
     - url: /hacsfiles/lovelace-hue-like-light-card/hue-like-light-card.js?v=1
       type: module
-    # Added 2026-09-04 for the Kiosk fuel-price chart. It replaced apexcharts-card, which was
-    # dropped the same day: no dashboard referenced custom:apexcharts-card any more, verified
-    # against the four storage-mode dashboards in .storage as well as the four YAML ones, and
-    # the repo was then uninstalled from HACS. Re-add via HACS if a chart ever needs it again.
+    - url: /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
+      type: module
+    # Added 2026-09-04 for the Kiosk fuel-price chart, replacing apexcharts-card there.
+    # Checked on the day: after that swap NO dashboard references custom:apexcharts-card
+    # (0 hits in kiosk-main.yaml and wall-main.yaml). The apexcharts entry above is kept
+    # deliberately pending the user's call, not because anything still needs it - removing
+    # it is a `lovelace.reload_resources`, not a restart.
     - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js?v=1
       type: module
     - url: /hacsfiles/weather-radar-card/weather-radar-card.js?v=1

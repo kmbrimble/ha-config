@@ -3,6 +3,37 @@
 ## [Unreleased]
 
 ### Changed
+- **`apexcharts-card` dropped.** Removed from `lovelace: resources:` (applied with
+  `lovelace.reload_resources`, no restart) and uninstalled from HACS, which deleted
+  `www/community/apexcharts-card/`. Checked first against **all eight** dashboards, not just the
+  YAML ones: the four storage-mode configs in `.storage` (`lovelace.lovelace`,
+  `lovelace.dash_blinds`, `lovelace.dashboard_lights`, `lovelace.map`) were grepped read-only and
+  none referenced it. Note `.storage/lovelace_resources` still lists the old URL - HACS does not
+  clean that in `resource_mode: yaml`, and it is inert because HA reads resources from
+  `configuration.yaml`. Left alone deliberately: `.storage` is never hand-edited.
+- **Kiosk fuel cards show the last known price in italics during an API dropout** instead of an
+  em dash. The em dash now only appears in the genuine no-data case - nothing live *and* nothing
+  stored. Backed by two new trigger template sensors, `sensor.<station>_fuel_last_known_price`,
+  which latch every successful numeric read (including reads that repeat the same price) and
+  deliberately do **not** follow the source down when `qld_fuel` drops out.
+- The cards' "Updated" line now reads from the fallback sensor while the source is down. The
+  source's own `last_changed` is the moment it *went* down, which would have read as a fresh
+  price sitting under an italicised stale one.
+
+### Fixed
+- **Correction to yesterday's entry: seeding those sensors with `POST /api/states` does not
+  survive a reload, and the previous-price seeding claimed there had silently reverted.**
+  Trigger-based template sensors restore the last value *the entity itself wrote*;
+  `POST /api/states` writes straight into the state machine, bypassing the entity, so
+  `RestoreEntity` never records it. Proven on 2026-09-04: Kenmore was POSTed to 221.9 at 10:08
+  AEST and came back as 224.9 after a `reload_all` at 12:19, while Sunnybank - which had latched
+  217.9 through its own trigger at 11:54 - restored intact. All four sensors now also listen for
+  a `fuel_price_seed` event addressed by `unique_id`, so a correction is written *by the entity*
+  and persists. Re-seeded and verified across a reload. The seeding recipe is in the package
+  header; `.storage/core.restore_state` is never to be hand-edited to do this.
+- `sensor.<station>_fuel_last_known_price` carries a `source_last_changed` attribute so a seeded
+  value still reports when the price really moved rather than when it was seeded.
+
 - **Kiosk fuel-price chart replaced: `custom:apexcharts-card` -> `custom:mini-graph-card`.**
   Two complaints drove this: the apex card sat on its loading spinner for hours on the Kiosk PC
   and sometimes never loaded, and the line broke into segments wherever `qld_fuel` dropped to
