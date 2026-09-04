@@ -3,6 +3,60 @@
 ## [Unreleased]
 
 ### Changed
+- **Kiosk fuel-price chart replaced: `custom:apexcharts-card` -> `custom:mini-graph-card`.**
+  Two complaints drove this: the apex card sat on its loading spinner for hours on the Kiosk PC
+  and sometimes never loaded, and the line broke into segments wherever `qld_fuel` dropped to
+  `unknown`/`unavailable` (ApexCharts has no `connectNulls`). mini-graph-card filters non-numeric
+  states out of history before bucketing and carries the last value forward into empty buckets,
+  so the line is unbroken by construction and a change across a gap is drawn as one riser rather
+  than a break. Same two entities, same `#4fc3f7` / `#ffb74d` colours, same 215px card height,
+  and the committed card-geometry baseline is unchanged - nothing else in the column moved.
+  Trade-off accepted: mini-graph-card has no x-axis, so the dd/MM date labels are gone.
+- Installed `kalkih/mini-graph-card` v0.13.0 via HACS and registered
+  `/hacsfiles/mini-graph-card/mini-graph-card-bundle.js?v=1` under `lovelace: resources:`.
+  `lovelace.reload_resources` was enough - no restart. `apexcharts-card` is left registered
+  pending a decision; after this change **no dashboard references it** (0 hits in `kiosk-main.yaml`
+  and `wall-main.yaml`), so it can be dropped with another `reload_resources`.
+- `packages/` is now tracked in this repo. It previously existed only on the mount, so the
+  fuel-price template sensors were unversioned.
+
+### Fixed
+- **ROOT CAUSE of the endless chart loading spinner: the HACS cards' localforage/IndexedDB
+  history cache, not the charting library.** Both apexcharts-card and mini-graph-card bundle
+  localforage and both default `cache: true`. On this system that read never settles -
+  mini-graph-card's `updateEntity` awaits `getCache` forever, so `updating` stays true,
+  `Graph._history` stays undefined and `renderGraph` returns `<ha-spinner>` indefinitely.
+  Measured 2026-09-04 at 3440x1440: with the cache on the card sat at 52px (spinner only) for a
+  full 15s probe; with `cache: false` it rendered in under 1.5s. Caching bought nothing here
+  anyway - the 14-day history fetch for both entities measures ~3ms. The apex card almost
+  certainly had the same fault; **do not remove `cache: false` from any history-backed card.**
+- **The Kiosk fuel trend arrow no longer disappears between price changes.** The previous-price
+  template sensors in `packages/fuel_price_trends.yaml` fired on a bare `state` trigger, which
+  also fires on the attribute-only rewrites `qld_fuel` performs every ~2 hours (`7_day_average`,
+  `days_since_7_day_low`, ...). Each of those latched the *current* price as the "previous"
+  price, so the arrow vanished until the next real change; both sensors were found sitting at
+  exactly the current price. They now carry a condition so only a change in the numeric price
+  latches, and transitions in and out of `unknown`/`unavailable` are ignored in both directions
+  (so `221.9 -> unavailable -> 221.9` is not counted as two changes). The arrow now shows the
+  direction of the last *real* move and holds until the next one.
+- Seeded both previous-price sensors from recorder history with the true pre-change values
+  (Kenmore 221.9, Sunnybank 216.9) so the arrows are correct immediately rather than from the
+  next price move.
+- **Kiosk fuel cards no longer render `$NaN`.** Both price templates now return an em dash when
+  the sensor is `unknown`/`unavailable`, which `qld_fuel` does periodically (e.g. 2 Sep,
+  01:20-05:20 UTC).
+
+### Known
+- The chart's `hours_to_show: 336` is wider than the available history: the `qld_fuel` entities
+  were created 2026-08-29, and mini-graph-card back-fills pre-history buckets with the *earliest*
+  recorded price rather than leaving them blank. Until ~2026-09-12 the left of the chart is a
+  flat line at 221.9 / 212.9 that never actually happened. Accepted deliberately; there is no way
+  to crop the x-axis to the data extent, `hours_to_show` fixes the window.
+- The card's svg is aspect-locked (`viewBox 0 0 500 H`), so rendered graph height is
+  `cardWidth * H / 500`, not `H` pixels. `height: 245` at this column's 407px width gives 199px
+  of graph + 16px padding = the 215px the apex card occupied. Recompute if the column width changes.
+
+### Changed
 - **Network Cupboard sensor moved outdoors and renamed.** The ESP32 environment monitor
   (ESPHome node `networkcupboardtemp`) now measures the lower deck. In the HA registries the
   device became **Lower Deck** in the **Lower Deck** area, and its entities were renamed:

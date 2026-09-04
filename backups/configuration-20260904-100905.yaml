@@ -60,13 +60,6 @@ lovelace:
       type: module
     - url: /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
       type: module
-    # Added 2026-09-04 for the Kiosk fuel-price chart, replacing apexcharts-card there.
-    # Checked on the day: after that swap NO dashboard references custom:apexcharts-card
-    # (0 hits in kiosk-main.yaml and wall-main.yaml). The apexcharts entry above is kept
-    # deliberately pending the user's call, not because anything still needs it - removing
-    # it is a `lovelace.reload_resources`, not a restart.
-    - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js?v=1
-      type: module
     - url: /hacsfiles/weather-radar-card/weather-radar-card.js?v=1
       type: module
   dashboards:

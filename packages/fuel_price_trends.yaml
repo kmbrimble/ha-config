@@ -1,0 +1,51 @@
+# Latches the price each station was at BEFORE its most recent REAL price change, so the
+# Kiosk fuel cards can draw a trend arrow that persists between changes.
+#
+# WHY THE CONDITION EXISTS (do not remove it):
+# The qld_fuel integration rewrites these sensors roughly every 2 hours, and it rewrites the
+# attributes (7_day_average, days_since_7_day_low, ...) even when the price itself has not
+# moved. A bare `state` trigger fires on those attribute-only writes too, so the previous
+# version of this package latched the CURRENT price as the "previous" price and the trend
+# arrow on the Kiosk vanished until the next actual change. Confirmed 2026-09-04: both
+# previous-price sensors were sitting at exactly the current price.
+#
+# The condition also ignores transitions in and out of unavailable/unknown, which the API
+# drops into periodically (e.g. 2026-09-02 01:20-05:20 UTC). Without that,
+# 221.9 -> unavailable -> 221.9 would be latched as two changes and would blank the arrow.
+
+template:
+  - trigger:
+      - trigger: state
+        entity_id: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+    condition:
+      - condition: template
+        value_template: >
+          {% set f = trigger.from_state.state if trigger.from_state else none %}
+          {% set t = trigger.to_state.state if trigger.to_state else none %}
+          {{ f not in [none, 'unknown', 'unavailable']
+             and t not in [none, 'unknown', 'unavailable']
+             and f | float(0) > 0 and t | float(0) > 0
+             and f | float != t | float }}
+    sensor:
+      - name: Kenmore Fuel Previous Price
+        unique_id: kenmore_fuel_previous_price
+        unit_of_measurement: "¢/L"
+        state: "{{ trigger.from_state.state | float }}"
+
+  - trigger:
+      - trigger: state
+        entity_id: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+    condition:
+      - condition: template
+        value_template: >
+          {% set f = trigger.from_state.state if trigger.from_state else none %}
+          {% set t = trigger.to_state.state if trigger.to_state else none %}
+          {{ f not in [none, 'unknown', 'unavailable']
+             and t not in [none, 'unknown', 'unavailable']
+             and f | float(0) > 0 and t | float(0) > 0
+             and f | float != t | float }}
+    sensor:
+      - name: Sunnybank Fuel Previous Price
+        unique_id: sunnybank_fuel_previous_price
+        unit_of_measurement: "¢/L"
+        state: "{{ trigger.from_state.state | float }}"

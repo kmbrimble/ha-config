@@ -1,0 +1,34 @@
+template:
+  - trigger:
+      - trigger: state
+        entity_id: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+    sensor:
+      - name: Kenmore Fuel Previous Price
+        unique_id: kenmore_fuel_previous_price
+        unit_of_measurement: "¢/L"
+        state: >
+          {% set old = trigger.from_state.state if trigger.from_state else none %}
+          {% if old not in [none, 'unknown', 'unavailable'] and old | float(0) > 0 %}
+            {{ old }}
+          {% elif this is not none and this.state not in [none, 'unknown', 'unavailable'] %}
+            {{ this.state }}
+          {% else %}
+            {{ trigger.to_state.state }}
+          {% endif %}
+
+  - trigger:
+      - trigger: state
+        entity_id: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+    sensor:
+      - name: Sunnybank Fuel Previous Price
+        unique_id: sunnybank_fuel_previous_price
+        unit_of_measurement: "¢/L"
+        state: >
+          {% set old = trigger.from_state.state if trigger.from_state else none %}
+          {% if old not in [none, 'unknown', 'unavailable'] and old | float(0) > 0 %}
+            {{ old }}
+          {% elif this is not none and this.state not in [none, 'unknown', 'unavailable'] %}
+            {{ this.state }}
+          {% else %}
+            {{ trigger.to_state.state }}
+          {% endif %}
