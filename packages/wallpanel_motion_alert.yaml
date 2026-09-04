@@ -1,0 +1,12 @@
+# WallPanel motion alert — mute switch
+#
+# The automation that uses this lives in automations.yaml
+# ("Security - WallPanel motion while both away") so it stays editable in the HA UI.
+# Only the helper lives here, because helpers created in the UI are stored in
+# .storage/, which this project must never hand-edit.
+#
+# Turn this off to silence the alert without disabling the automation itself.
+input_boolean:
+  wallpanel_motion_alert_enabled:
+    name: WallPanel motion alert
+    icon: mdi:motion-sensor

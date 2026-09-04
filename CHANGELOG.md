@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+### Added
+- **WallPanel motion alert while the house is empty.** New automation
+  `automation.security_wallpanel_motion_while_both_away` sends a time-sensitive push
+  (`data.push.interruption-level: time-sensitive`, so it breaks through Focus) to
+  `notify.mobile_app_kierens_iphone_17` and `notify.mobile_app_kierens_work_iphone_15` when
+  `binary_sensor.my_wall_panel_motion_detected_2` goes `off` -> `on`.
+  - Trigger is pinned to the `off` -> `on` edge specifically. The tablet sensor drops to
+    `unavailable` when the panel disconnects, and `unavailable` -> `on` would otherwise fire an
+    alert every time it came back.
+  - "Away" is `states(...) not in ['home', 'unknown', 'unavailable']` for both `person.kieren` and
+    `person.t`, not `not_home`. `person.t` sits in named zones (e.g. `Sunnybank`), which a
+    `not_home` test would miss; excluding `unknown`/`unavailable` means a dropped tracker fails
+    safe (no alert) rather than raising a false one.
+  - 10-minute cooldown via `this.attributes.last_triggered`, which is the *action script's*
+    attribute and so only advances when the actions actually run - a trigger blocked by a
+    condition does not restart the cooldown. Verified: a conditions-enforced run while home
+    stopped at `condition/2` with `last_triggered` still `null`.
+  - The mute switch is `input_boolean.wallpanel_motion_alert_enabled`, defined in
+    `packages/wallpanel_motion_alert.yaml` rather than as a UI helper, because UI helpers live in
+    `.storage/` which this project never hand-edits. It has no `initial:`, so it restores its last
+    state across restarts. The automation itself stays in `automations.yaml` so it remains
+    UI-editable.
+  - Both pushes carry the same `tag`, so a repeat replaces the earlier banner instead of stacking,
+    and `url: /wall-main` opens the WallPanel dashboard (cameras) on tap.
+
 ### Changed
 - **`apexcharts-card` dropped.** Removed from `lovelace: resources:` (applied with
   `lovelace.reload_resources`, no restart) and uninstalled from HACS, which deleted
