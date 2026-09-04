@@ -1,0 +1,632 @@
+kiosk_mode:
+  hide_header: true
+  hide_sidebar: true
+views:
+- title: Main
+  path: main
+  type: panel
+  theme: catppuccin-mocha
+  cards:
+  - type: horizontal-stack
+    card_mod:
+      style: |
+        :host { margin: 0 !important; padding: 0 !important; }
+        div#root { margin: 0 !important; padding: 0 !important; gap: 0 !important; }
+    cards:
+    - type: iframe
+      url: http://magicmirror.kiztigs.com/?v=2
+      card_mod:
+        style: |
+          :host { width: 1720px !important; flex: 0 0 1720px !important; margin: 0 !important; height: 100vh !important; }
+          ha-card { height: 100% !important; border: none; border-radius: 0; background: black !important; }
+          iframe { height: 100% !important; border: none; }
+    - type: vertical-stack
+      card_mod:
+        style: |
+          :host {
+            width: 447px !important;
+            flex: 0 0 447px !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            background: black !important;
+            padding: 20px !important;
+            box-sizing: border-box;
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          #root { height: 100% !important; }
+          #root > hui-card:nth-last-child(4) { margin-top: auto !important; }
+          ha-card { background: transparent !important; border: none; box-shadow: none; }
+      cards:
+      - type: conditional
+        conditions:
+        - entity: person.kieren
+          state_not: home
+        - entity: person.t
+          state: home
+        card:
+          type: vertical-stack
+          cards:
+          - type: custom:button-card
+            entity: person.kieren
+            name: 'K:'
+            show_state: true
+            show_icon: false
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  box-shadow: inset 6px 0 0 0 orchid !important;
+                }
+            styles:
+              card:
+              - background-color: '#1a1a1a'
+              - padding: 10px 25px
+              - height: 40px
+              - margin-bottom: 5px
+              - border-radius: 6px
+              grid:
+              - grid-template-areas: '"n s"'
+              - grid-template-columns: min-content 1fr
+              - column-gap: 15px
+              name:
+              - justify-self: start
+              - font-size: 30px
+              - font-weight: 400
+              - color: '#e0e0e0'
+              - align-self: center
+              state:
+              - justify-self: start
+              - font-size: 30px
+              - font-weight: 700
+              - color: orchid
+              - align-self: center
+          - type: custom:button-card
+            entity: person.kieren
+            show_name: false
+            show_icon: false
+            aspect_ratio: 1/1
+            styles:
+              card:
+              - padding: 0
+              - overflow: hidden
+              - background: none
+              - border: none
+              custom_fields:
+                map:
+                - position: absolute
+                - top: -50%
+                - left: -50%
+                - width: 200%
+                - height: 200%
+            custom_fields:
+              map: |
+                [[[
+                  var lat = entity.attributes.latitude;
+                  var lon = entity.attributes.longitude;
+                  if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+                    return `<iframe src="http://maps.google.com/maps?q=${lat},${lon}&t=m&z=15&output=embed&iwloc=near" width="100%" height="100%" frameborder="0" style="border:0; pointer-events:none;"></iframe>`;
+                  }
+                  return `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#222;color:#888;font-weight:bold;font-size:14px;">NO GPS DATA</div>`;
+                ]]]
+          - type: custom:button-card
+            entity: person.t
+            name: 'T:'
+            show_state: true
+            show_icon: false
+            aspect_ratio: 1/1
+            styles:
+              card:
+              - padding: 0
+              - overflow: hidden
+              - background: none
+              - border: none
+              custom_fields:
+                map:
+                - position: absolute
+                - top: -50%
+                - left: -50%
+                - width: 200%
+                - height: 200%
+            custom_fields:
+              map: |
+                [[[
+                  var lat = entity.attributes.latitude;
+                  var lon = entity.attributes.longitude;
+                  if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+                    return `<iframe src="http://maps.google.com/maps?q=${lat},${lon}&t=m&z=15&output=embed&iwloc=near" width="100%" height="100%" frameborder="0" style="border:0; pointer-events:none;"></iframe>`;
+                  }
+                  return `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#222;color:#888;font-weight:bold;font-size:14px;">NO GPS DATA</div>`;
+                ]]]
+      - type: conditional
+        conditions:
+        - entity: person.t
+          state_not: home
+        - entity: person.kieren
+          state: home
+        card:
+          type: vertical-stack
+          cards:
+          - type: custom:button-card
+            entity: person.t
+            name: 'T:'
+            show_state: true
+            show_icon: false
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  box-shadow: inset 6px 0 0 0 orchid !important;
+                }
+            styles:
+              card:
+              - background-color: '#1a1a1a'
+              - padding: 10px 25px
+              - height: 40px
+              - margin-bottom: 5px
+              - border-radius: 6px
+              grid:
+              - grid-template-areas: '"n s"'
+              - grid-template-columns: min-content 1fr
+              - column-gap: 15px
+              name:
+              - justify-self: start
+              - font-size: 30px
+              - font-weight: 400
+              - color: '#e0e0e0'
+              - align-self: center
+              state:
+              - justify-self: start
+              - font-size: 30px
+              - font-weight: 700
+              - color: orchid
+              - align-self: center
+          - type: custom:button-card
+            entity: person.t
+            show_name: false
+            show_icon: false
+            aspect_ratio: 1/1
+            styles:
+              card:
+              - padding: 0
+              - overflow: hidden
+              - background: none
+              - border: none
+              custom_fields:
+                map:
+                - position: absolute
+                - top: -50%
+                - left: -50%
+                - width: 200%
+                - height: 200%
+            custom_fields:
+              map: |
+                [[[
+                  var lat = entity.attributes.latitude;
+                  var lon = entity.attributes.longitude;
+                  if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+                    return `<iframe src="http://maps.google.com/maps?q=${lat},${lon}&t=m&z=15&output=embed&iwloc=near" width="100%" height="100%" frameborder="0" style="border:0; pointer-events:none;"></iframe>`;
+                  }
+                  return `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#222;color:#888;font-weight:bold;font-size:14px;">NO GPS DATA</div>`;
+                ]]]
+      - type: custom:button-card
+        entity: sensor.lower_deck_temperature
+        show_name: false
+        show_state: false
+        show_icon: false
+        variables:
+          hum_entity: sensor.lower_deck_humidity
+        card_mod:
+          style: |
+            ha-card { height: 133px; container-type: inline-size; }
+        styles:
+          card:
+          - background-color: '#1a1a1a'
+          - border-radius: 6px
+          grid:
+          - grid-template-areas: '"content"'
+          - grid-template-columns: 1fr
+          - grid-template-rows: 1fr
+          custom_fields:
+            content:
+            - justify-self: stretch
+            - align-self: stretch
+        custom_fields:
+          content: |
+            [[[
+              var hs = states[variables.hum_entity];
+              var hum = (hs && !isNaN(Number(hs.state))) ? Number(hs.state).toFixed(0) + ' %' : '--';
+              var temp = !isNaN(Number(entity.state)) ? Number(entity.state).toFixed(1) + ' °C' : '--';
+              return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:4% 0; gap:3%; color:#ff8ad9; line-height:1;">'
+                + '<span style="font-size:6.4cqw; font-weight:400;">Outside</span>'
+                + '<div style="display:flex; width:100%; gap:8px; align-items:baseline;">'
+                + '<span style="flex:1 1 0; text-align:center; font-size:11.3cqw; font-weight:700;">' + temp + '</span>'
+                + '<span style="flex:1 1 0; text-align:center; font-size:11.3cqw; font-weight:700;">' + hum + '</span>'
+                + '</div>'
+                + '</div>';
+            ]]]
+      - type: horizontal-stack
+        cards:
+        - type: custom:button-card
+          entity: sensor.downstairs_living_remote_temperature
+          show_name: false
+          show_state: false
+          show_icon: false
+          card_mod:
+            style: |
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
+          styles:
+            card:
+            - background-color: '#1a1a1a'
+            - border-radius: 6px
+            grid:
+            - grid-template-areas: '"content"'
+            - grid-template-columns: 1fr
+            - grid-template-rows: 1fr
+            custom_fields:
+              content:
+              - justify-self: stretch
+              - align-self: stretch
+          custom_fields:
+            content: |
+              [[[
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:2%; color:#eaff00; line-height:1;">'
+                  + '<span style="font-size:13cqw; font-weight:400;">Living Room</span>'
+                  + '<span style="font-size:23cqw; font-weight:700;">' + Number(entity.state).toFixed(1) + ' °C</span>'
+                  + '</div>';
+              ]]]
+        - type: custom:button-card
+          entity: sensor.bedroom_remote_temperature
+          show_name: false
+          show_state: false
+          show_icon: false
+          card_mod:
+            style: |
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
+          styles:
+            card:
+            - background-color: '#1a1a1a'
+            - border-radius: 6px
+            grid:
+            - grid-template-areas: '"content"'
+            - grid-template-columns: 1fr
+            - grid-template-rows: 1fr
+            custom_fields:
+              content:
+              - justify-self: stretch
+              - align-self: stretch
+          custom_fields:
+            content: |
+              [[[
+                return '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; box-sizing:border-box; padding:8%; gap:2%; color:#26c6da; line-height:1;">'
+                  + '<span style="font-size:13cqw; font-weight:400;">Bedroom</span>'
+                  + '<span style="font-size:23cqw; font-weight:700;">' + Number(entity.state).toFixed(1) + ' °C</span>'
+                  + '</div>';
+              ]]]
+      - type: horizontal-stack
+        cards:
+        - type: custom:button-card
+          entity: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+          name: Kenmore
+          show_state: false
+          show_icon: false
+          variables:
+            prev_entity: sensor.kenmore_fuel_previous_price
+            last_entity: sensor.kenmore_fuel_last_known_price
+          styles:
+            card:
+            - background-color: '#1a1a1a'
+            - border-radius: 6px
+            - padding: 8px 10px
+            - height: 90px
+            grid:
+            - grid-template-areas: '"n" "price" "ts"'
+            - grid-template-rows: min-content min-content min-content
+            - grid-template-columns: 1fr
+            - row-gap: 0px
+            name:
+            - justify-self: start
+            - align-self: start
+            - font-size: 20px
+            - font-weight: 400
+            - color: '#e0e0e0'
+            custom_fields:
+              price:
+              - justify-self: start
+              - align-self: center
+              - font-size: 28px
+              - font-weight: 700
+              - color: '#4fc3f7'
+              ts:
+              - justify-self: start
+              - align-self: start
+              - font-size: 11px
+              - font-weight: 400
+              - color: '#808080'
+          custom_fields:
+            price: |
+              [[[
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+
+                // qld_fuel drops to unknown/unavailable periodically (e.g. 2 Sep, 01:20-05:20
+                // UTC). Rather than blanking the card, fall back to the last price that was
+                // actually read and render it in ITALICS to flag it as possibly stale.
+                var lastState = states[variables.last_entity];
+                var last = lastState ? Number(lastState.state) : NaN;
+                var cur = live ? raw : last;
+
+                // Em dash is now only for the genuine no-data case: nothing live AND nothing
+                // stored. Before this the card rendered "$NaN" on every dropout.
+                if (!isFinite(cur) || cur <= 0) return '\u2014';
+
+                var priceStr = '$' + (cur / 100).toFixed(3);
+                if (!live) priceStr = '<span style="font-style:italic;">' + priceStr + '</span>';
+
+                // prev_entity holds the price BEFORE the last REAL change (see
+                // packages/fuel_price_trends.yaml), so this arrow persists between changes
+                // instead of vanishing on every attribute-only refresh.
+                var prevState = states[variables.prev_entity];
+                var prev = prevState ? Number(prevState.state) : NaN;
+                var arrow = '';
+                if (isFinite(prev) && prev > 0 && cur !== prev) {
+                  arrow = cur > prev
+                    ? '<span style="color:#ff5252; font-size:0.5em; margin-left:8px;">&#9650;</span>'
+                    : '<span style="color:#69f0ae; font-size:0.5em; margin-left:8px;">&#9660;</span>';
+                }
+                return priceStr + arrow;
+              ]]]
+            ts: |
+              [[[
+                // While the sensor is down its last_changed is the moment it WENT down, which
+                // would read as a fresh price sitting under an italicised stale one. Point at
+                // the last-known-price sensor instead, whose last_changed only moves on a real
+                // price change - so this line keeps meaning "when the price last changed".
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+                var src = live ? entity : states[variables.last_entity];
+                if (!src) return '';
+                // source_last_changed is only on the fallback sensor, and is the source's own
+                // last_changed - so a seeded value reports when the price really moved, not
+                // when it was seeded. Fall back to last_changed if the attribute is missing.
+                var when = (!live && src.attributes && src.attributes.source_last_changed)
+                  ? src.attributes.source_last_changed
+                  : src.last_changed;
+                if (!when) return '';
+                var d = new Date(when);
+                var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
+                return 'Updated ' + d.toLocaleString('en-AU', opts);
+              ]]]
+        - type: custom:button-card
+          entity: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+          name: Sunnybank
+          show_state: false
+          show_icon: false
+          variables:
+            prev_entity: sensor.sunnybank_fuel_previous_price
+            last_entity: sensor.sunnybank_fuel_last_known_price
+          styles:
+            card:
+            - background-color: '#1a1a1a'
+            - border-radius: 6px
+            - padding: 8px 10px
+            - height: 90px
+            grid:
+            - grid-template-areas: '"n" "price" "ts"'
+            - grid-template-rows: min-content min-content min-content
+            - grid-template-columns: 1fr
+            - row-gap: 0px
+            name:
+            - justify-self: start
+            - align-self: start
+            - font-size: 20px
+            - font-weight: 400
+            - color: '#e0e0e0'
+            custom_fields:
+              price:
+              - justify-self: start
+              - align-self: center
+              - font-size: 28px
+              - font-weight: 700
+              - color: '#ffb74d'
+              ts:
+              - justify-self: start
+              - align-self: start
+              - font-size: 11px
+              - font-weight: 400
+              - color: '#808080'
+          custom_fields:
+            price: |
+              [[[
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+
+                // qld_fuel drops to unknown/unavailable periodically (e.g. 2 Sep, 01:20-05:20
+                // UTC). Rather than blanking the card, fall back to the last price that was
+                // actually read and render it in ITALICS to flag it as possibly stale.
+                var lastState = states[variables.last_entity];
+                var last = lastState ? Number(lastState.state) : NaN;
+                var cur = live ? raw : last;
+
+                // Em dash is now only for the genuine no-data case: nothing live AND nothing
+                // stored. Before this the card rendered "$NaN" on every dropout.
+                if (!isFinite(cur) || cur <= 0) return '\u2014';
+
+                var priceStr = '$' + (cur / 100).toFixed(3);
+                if (!live) priceStr = '<span style="font-style:italic;">' + priceStr + '</span>';
+
+                // prev_entity holds the price BEFORE the last REAL change (see
+                // packages/fuel_price_trends.yaml), so this arrow persists between changes
+                // instead of vanishing on every attribute-only refresh.
+                var prevState = states[variables.prev_entity];
+                var prev = prevState ? Number(prevState.state) : NaN;
+                var arrow = '';
+                if (isFinite(prev) && prev > 0 && cur !== prev) {
+                  arrow = cur > prev
+                    ? '<span style="color:#ff5252; font-size:0.5em; margin-left:8px;">&#9650;</span>'
+                    : '<span style="color:#69f0ae; font-size:0.5em; margin-left:8px;">&#9660;</span>';
+                }
+                return priceStr + arrow;
+              ]]]
+            ts: |
+              [[[
+                // While the sensor is down its last_changed is the moment it WENT down, which
+                // would read as a fresh price sitting under an italicised stale one. Point at
+                // the last-known-price sensor instead, whose last_changed only moves on a real
+                // price change - so this line keeps meaning "when the price last changed".
+                var raw = Number(entity.state);
+                var live = isFinite(raw) && raw > 0;
+                var src = live ? entity : states[variables.last_entity];
+                if (!src) return '';
+                // source_last_changed is only on the fallback sensor, and is the source's own
+                // last_changed - so a seeded value reports when the price really moved, not
+                // when it was seeded. Fall back to last_changed if the attribute is missing.
+                var when = (!live && src.attributes && src.attributes.source_last_changed)
+                  ? src.attributes.source_last_changed
+                  : src.last_changed;
+                if (!when) return '';
+                var d = new Date(when);
+                var opts = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Brisbane' };
+                return 'Updated ' + d.toLocaleString('en-AU', opts);
+              ]]]
+      # Replaced custom:apexcharts-card on 2026-09-04. Two faults with apex here: it sat on
+      # its loading spinner for hours on the Kiosk PC, and it broke the line into segments
+      # every time the qld_fuel API dropped to unknown/unavailable (ApexCharts has no
+      # connectNulls). mini-graph-card filters non-numeric states out of the history before
+      # bucketing and carries the last value forward into empty buckets, so the line is
+      # unbroken by construction and a change across a gap is drawn as one riser, not a break.
+      #
+      # KNOWN AND ACCEPTED: with hours_to_show 336 and the qld_fuel entities only created
+      # 2026-08-29, the left of the chart is back-filled with the earliest recorded price -
+      # mini-graph-card's _calcPoints seeds its carry-forward from the FIRST non-empty bucket,
+      # so pre-history buckets are not blank, they are flat at 221.9 / 212.9. That lead-in
+      # shrinks to nothing by ~2026-09-12. There is no way to crop the x-axis to the data
+      # extent; hours_to_show fixes the window.
+      #
+      # mini-graph-card has no x-axis, so the dd/MM labels the apex card had are gone.
+      # value_factor is DISPLAY ONLY (it scales the y labels from cents to dollars) - bounds
+      # and min_bound_range are still expressed in the entities' native cents.
+      #
+      # `cache: false` IS THE FIX FOR THE ENDLESS LOADING SPINNER - do not remove it.
+      # mini-graph-card defaults cache to true and caches history through localforage/
+      # IndexedDB. On this system that read never settles: updateEntity awaits getCache
+      # forever, so `updating` stays true, Graph._history stays undefined and renderGraph
+      # returns <ha-spinner> indefinitely. Measured 2026-09-04: with cache on the card sat at
+      # 52px (spinner only) for the full 15s probe; with cache off it rendered in under 1.5s.
+      # apexcharts-card bundles the SAME localforage cache and also defaults it on, which is
+      # very likely what was wedging the chart this card replaces. Caching buys nothing here
+      # anyway - the 14-day history fetch for both entities measures ~3ms.
+      #
+      # HEIGHT: the svg is aspect-locked (viewBox 0 0 500 H, preserveAspectRatio default), so
+      # the rendered graph is cardWidth * H / 500, NOT H pixels. At this column's 407px width,
+      # H=245 gives 199px of graph + 16px ha-card padding = 215px, matching the apex card it
+      # replaces so nothing else in the column moves. If the column width ever changes, this
+      # number has to be recomputed.
+      - type: custom:mini-graph-card
+        card_mod:
+          style: |
+            /* margin-top is 0, not the 8px the apex card carried: mini-graph-card's host
+               already contributes 8px of its own, and 8+8 pushed the two price cards above
+               it up by 8px. With 0 here the gap under the Sunnybank card is the same 8px it
+               always was, and the column's geometry matches the committed baseline exactly.
+               These MUST be CSS comments, not YAML "#" ones - the block scalar below is a
+               stylesheet, so a "#" line is parsed as a selector and swallows the next rule. */
+            :host { margin-top: 0 !important; }
+            ha-card {
+              background: #1a1a1a !important;
+              border-radius: 6px !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+        entities:
+        - entity: sensor.kenmore_fuel_ampol_foodary_kenmore_unleaded_95
+          name: Kenmore
+          color: '#4fc3f7'
+        - entity: sensor.sunnybank_fuel_7_eleven_acacia_ridge_east_unleaded_95
+          name: Sunnybank
+          color: '#ffb74d'
+        hours_to_show: 336
+        points_per_hour: 0.5
+        aggregate_func: last
+        group_by: interval
+        smoothing: false
+        line_width: 2
+        height: 245
+        min_bound_range: 20
+        value_factor: -2
+        decimals: 3
+        unit: '$/L'
+        hour24: true
+        cache: false
+        show:
+          name: false
+          icon: false
+          state: false
+          legend: false
+          fill: false
+          points: false
+          extrema: false
+          average: false
+          labels: true
+    - type: vertical-stack
+      card_mod:
+        style: ":host { \n  width: 1273px !important; \n  flex: 0 0 1273px !important; \n  margin: 0 !important; \n  height: 100vh !important; \n  background: black !important;\n  --vertical-stack-card-gap: 0px;\n}\n"
+      cards:
+      - type: picture-entity
+        entity: camera.cameras_subfront
+        camera_view: live
+        show_name: false
+        show_state: false
+        card_mod:
+          style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
+      - type: picture-entity
+        entity: camera.cameras_subsideyard
+        camera_view: live
+        show_name: false
+        show_state: false
+        card_mod:
+          style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
+      - type: horizontal-stack
+        card_mod:
+          style: |
+            :host {
+              --horizontal-stack-card-gap: 0px;
+              background: black !important;
+            }
+        cards:
+        - type: picture-entity
+          entity: camera.cameras_subbottomyard
+          camera_view: live
+          show_name: false
+          show_state: false
+          card_mod:
+            style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
+        - type: picture-entity
+          entity: camera.cameras_subtopyard
+          camera_view: live
+          show_name: false
+          show_state: false
+          card_mod:
+            style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
+      - type: horizontal-stack
+        card_mod:
+          style: |
+            :host {
+              --horizontal-stack-card-gap: 0px;
+              background: black !important;
+            }
+        cards:
+        - type: picture-entity
+          entity: camera.cameras_subbackgate
+          camera_view: live
+          show_name: false
+          show_state: false
+          card_mod:
+            style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
+        - type: picture-entity
+          entity: camera.cameras_front_gate
+          camera_view: live
+          show_name: false
+          show_state: false
+          card_mod:
+            style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
