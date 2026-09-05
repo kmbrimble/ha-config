@@ -1,0 +1,52 @@
+# Blue Iris stream watchdog — health probe
+#
+# The automation that uses this lives in automations.yaml
+# ("Cameras - Blue Iris stream watchdog") so it stays editable in the HA UI.
+# Only the sensor lives here, because `command_line:` is a platform config and
+# cannot be created in the UI.
+#
+# WHY THIS EXISTS
+# ---------------
+# `custom_components/blueiris` bakes the Blue Iris session ID into each camera's
+# still-image and stream URL at ENTITY CONSTRUCTION time
+# (managers/entity_manager.py: `.../image/{cam}?session={session_id}`, handed to
+# BlueIrisCamera.__init__ as CONF_STILL_IMAGE_URL / CONF_STREAM_SOURCE).
+#
+# Blue Iris invalidates sessions — on a BI or PC restart, and also on its own
+# session timeout. The API layer copes: async_verified_post() re-logs in and gets
+# a fresh session ID. The camera ENTITIES do not — `self._still_image_url` is
+# never re-read, so every image fetch keeps using the dead session forever.
+#
+# The failure is silent. BI answers a dead session with a 302 to /login.htm, and
+# HA's camera proxy serves that HTML back with `Content-Type: image/jpeg`. The
+# entity stays `idle`, nothing goes `unavailable`, and the dashboards just show
+# broken pictures. Reloading the config entry rebuilds the entities against the
+# current session and fixes all of them.
+#
+# So the probe cannot look at entity state — it has to look at the BYTES. It
+# fetches one camera through HA's own camera proxy (the same path the dashboards
+# use) and checks for the JPEG magic number FF D8 FF. The login page starts with
+# "<!D", so a stale session reads as `off`.
+#
+# All seven Blue Iris cameras share one session, so probing one covers them all.
+# `entity_picture` carries a signed, self-rotating token, which is why no
+# long-lived HA token is needed here.
+#
+# Any failure — dead session, BI down, PC off, HA proxy error, timeout — reads as
+# `off`. That is deliberate: the automation's job is to retry until the picture
+# is real again, whatever the cause.
+
+command_line:
+  - binary_sensor:
+      name: Blue Iris Streams
+      unique_id: blue_iris_streams_healthy
+      device_class: connectivity
+      scan_interval: 15
+      command_timeout: 10
+      payload_on: ok
+      payload_off: bad
+      command: >-
+        python3 -c "import urllib.request; print('ok' if
+        urllib.request.urlopen('http://127.0.0.1:8123{{ state_attr('camera.cameras_subfront',
+        'entity_picture') }}', timeout=8).read(3) == b'\xff\xd8\xff' else 'bad')"
+        2>/dev/null || echo bad
