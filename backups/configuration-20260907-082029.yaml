@@ -102,6 +102,7 @@ climate:
     controller_data: remote.downstairs_living_remote
     temperature_sensor: sensor.downstairs_living_remote_temperature
     humidity_sensor: sensor.downstairs_living_remote_humidity
+    power_sensor: binary_sensor.ac_power
   - platform: smartir
     name: Bedroom AC
     unique_id: mainbed_ac
@@ -109,6 +110,7 @@ climate:
     controller_data: remote.bedroom_remote
     temperature_sensor: sensor.bedroom_remote_temperature
     humidity_sensor: sensor.bedroom_remote_humidity
+    power_sensor: binary_sensor.ac_power
 
 sensor:
   - platform: time_date

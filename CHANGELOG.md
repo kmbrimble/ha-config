@@ -2,7 +2,38 @@
 
 ## [Unreleased]
 
+### Added
+- **`Climate` Matter bridge in home-assistant-matter-hub, exposing both air conditioners to Google
+  Home.** Bridge id `0b65a0e3c4f04b8492c1eb756579a421`, port 5543, filter `domain: climate`. Both
+  `climate.bedroom_ac` and `climate.living_room_ac` come through as Matter **RoomAirConditioner**
+  endpoints carrying `onOff`, `thermostat` (heating + cooling, no autoMode), `fanControl` and
+  `relativeHumidityMeasurement`.
+  - This lives **outside this repo** — the hub is the `home-assistant-matter-hub` container on
+    unRAID (2.0.56, `/mnt/user/appdata/home-assistant-matter-hub`), not HA's own `matter`
+    integration, whose config entry on this instance has `source: ignore` and is not loaded.
+    Recorded here because nothing else in the repo would show it exists.
+  - Bridge creation via `POST /api/matter/bridges` accepts **only** `name`, `port` and `filter` —
+    `icon`, `priority`, `featureFlags` and `basicInformation` are rejected with
+    `must NOT have additional properties`. Updates go through `PUT /api/matter/bridges/:id` and
+    the body must repeat the `id`; there is no `PATCH`.
+  - Known cosmetic wart: the Matter root node's `nodeLabel` is fixed at bridge-construction time,
+    so a bridge renamed after creation keeps the old label until the whole app restarts. Neither
+    `actions/restart` nor `actions/factory-reset` clears it. Create bridges under their final name.
+
 ### Changed
+- **Dropped the dangling `power_sensor: binary_sensor.ac_power` from both SmartIR climate
+  platforms** in `configuration.yaml`. That entity does not exist on this instance and never has —
+  `/api/states` has no record of it — so both `climate.bedroom_ac` and `climate.living_room_ac`
+  were registering a state-change listener against nothing. One shared power sensor for two
+  physically separate air conditioners could not have been right in either case.
+  - It was **inert**, not broken: in SmartIR 1.18.1 `power_sensor` is read only at `climate.py:110`
+    and used only to register `_async_power_sensor_changed` (`climate.py:191-193`, handler at
+    `:412`). `send_command()` does not consult it, so IR transmission was never gated by it. The
+    cost was that HA's idea of each AC's on/off state is assumed rather than observed — which it
+    still is, since these are hardwired Fujitsu splits with no power monitoring to point at.
+  - Config-checked `valid` and deployed to the mount, but **not applied** — YAML `climate:`
+    platforms have no reload service, so this takes effect on the next HA restart for any other
+    reason. Nothing changes in the meantime.
 - **Cards inside `conditional:` blocks are excluded from the card-geometry baseline.**
   `IN_CONDITIONAL` in `test-e2e/helpers.js` walks up through shadow boundaries and `cardBoxes()`
   filters on it. HA removes a conditional card from the DOM when its conditions are false, so the
