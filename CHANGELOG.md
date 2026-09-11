@@ -49,6 +49,23 @@
     Fixed separately in `ff3e254`; see below.
 
 ### Fixed
+- **DoorBird IR dropping out at night and not coming back until the DoorBird app was opened.**
+  `automations.yaml` → "Front Gate IR On at night" now requests a live image from the DoorBird
+  (`camera.snapshot` on `camera.front_gate_live`, which is `image.cgi`, saved to `/media` so it is
+  not web-served) and waits 1.5 s before pressing `button.front_gate_ir` (`light-on.cgi`).
+  - Reproduced 2026-09-11 with a torch on the lens: the IR went off, the camera stayed in night
+    mode, and HA's 2-minutely press was accepted but did nothing. An `image.cgi` then
+    `light-on.cgi` from the container, as the same DoorBird user, restored it within 1 s — twice.
+    DoorBird's LAN API doc says light-on assumes the user "watches the live image", and opening
+    the app (a live view) was the known cure.
+  - Not isolated: whether the image request is what matters, or something else about a curl
+    request versus HA's aiohttp one. If the IR still sticks, the next step is sending both
+    requests with curl from a `shell_command` (needs the DoorBird credentials in `secrets.yaml`).
+  - HA's DoorBird button discards the device's `RETURNCODE`/`IR-STATUS`, so a press that the
+    device ignores still shows as a successful automation run — the traces cannot show this fault.
+  - Also observed: the IR timer is ~3 min from the *last* press (each press extends it); a bare
+    press does light the IR from the normal expired/colour state; and `video.cgi`, `getsession.cgi`
+    and `image.cgi` on their own do not.
 - **The Kiosk right-hand column no longer overflows the display when Kieren is away and T is
   home.** The Kieren-away `conditional:` block carried a third `person.t` button-card - `name:
   'T:'` and the `aspect_ratio: 1/1` map fused into one card - alongside Kieren's own name bar and

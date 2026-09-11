@@ -263,11 +263,7 @@
   mode: single
 - id: '1751182976776'
   alias: Front Gate IR On at night
-  description: 'Re-arms the DoorBird IR every 2 min (it only stays on ~3 min). 2026-09-11: once
-    the IR dropped out (torch on the lens), a bare light-on press was accepted but ignored,
-    while a live-image request followed by light-on restored it (twice). So each run now
-    requests a live image first. Untested fallback if it still sticks: send both requests
-    with curl via shell_command.'
+  description: ''
   triggers:
   - trigger: time_pattern
     minutes: /2
@@ -278,20 +274,10 @@
     before_offset: -00:30:00
     after_offset: 00:30:00
   actions:
-  - alias: Request a live image from the DoorBird (camera.front_gate_live = image.cgi)
-    action: camera.snapshot
-    target:
-      entity_id: camera.front_gate_live
-    data:
-      filename: /media/front_gate_ir_wake.jpg
-    continue_on_error: true
-  - alias: DoorBird API allows one connection per second
-    delay:
-      milliseconds: 1500
-  - alias: Energise the IR (light-on.cgi)
-    action: button.press
-    target:
-      entity_id: button.front_gate_ir
+  - device_id: 2bf7c90629efb2289d294e0ac139a4e9
+    domain: button
+    entity_id: 1ed6a076af4f89efa3064cfddfb83b38
+    type: press
   mode: single
 - id: '1751313571376'
   alias: 'Doorbell - Lights on If Pressed '
