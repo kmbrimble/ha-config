@@ -1,0 +1,47 @@
+# UPS battery runtime, in minutes, with long-term statistics.
+#
+# WHY THIS EXISTS:
+# The NUT integration exposes `battery.runtime` as sensor.<ups>_battery_runtime with
+# device_class: duration and unit "s", but NO state_class. Without a state_class the
+# recorder keeps only short-term history (purged with the rest of the states, 10 days by
+# default) and writes nothing to the long_term_statistics tables. So the one number that
+# answers "is this battery getting weaker?" is the one number HA was not keeping.
+#
+# These two mirrors carry state_class: measurement, so they get 5-minute statistics rows
+# that survive the recorder purge and can be charted over months. Minutes rather than
+# seconds because that is how the runtime is actually read ("about 2 hours"), and because
+# a statistics graph in seconds is unreadable.
+#
+# The NUT sensors themselves cannot be fixed in place - state_class is set by the
+# integration's entity description, not by anything in the entity registry - hence mirrors.
+#
+# The availability guard matters: NUT drops these sensors to unavailable whenever upsd is
+# unreachable (a driver restart, a reboot of either host). Without the guard the template
+# would log a float-conversion error every poll while that lasts.
+#
+# Source UPSes: cupboard = CyberPower CP1600EPFCLCD (unRAID, 192.168.0.10)
+#               garage   = CyberPower UT850EG        (garagepi, 192.168.0.15)
+
+template:
+  - sensor:
+      - name: "Cupboard UPS Runtime"
+        unique_id: cupboard_ups_runtime_minutes
+        unit_of_measurement: "min"
+        device_class: duration
+        state_class: measurement
+        icon: mdi:timer-sand
+        availability: >
+          {{ states('sensor.cupboard_battery_runtime') | is_number }}
+        state: >
+          {{ (states('sensor.cupboard_battery_runtime') | float / 60) | round(1) }}
+
+      - name: "Garage UPS Runtime"
+        unique_id: garage_ups_runtime_minutes
+        unit_of_measurement: "min"
+        device_class: duration
+        state_class: measurement
+        icon: mdi:timer-sand
+        availability: >
+          {{ states('sensor.garage_battery_runtime') | is_number }}
+        state: >
+          {{ (states('sensor.garage_battery_runtime') | float / 60) | round(1) }}

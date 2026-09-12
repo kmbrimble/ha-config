@@ -20,6 +20,21 @@
     so a bridge renamed after creation keeps the old label until the whole app restarts. Neither
     `actions/restart` nor `actions/factory-reset` clears it. Create bridges under their final name.
 
+- **`packages/ups_runtime.yaml` — battery runtime with long-term statistics, for both UPSes.**
+  The NUT integration gives `battery.runtime` a `device_class: duration` and unit `s` but **no
+  `state_class`**, and `state_class` is what gates the recorder's `statistics`/
+  `statistics_short_term` tables. So the single most useful number for watching a VRLA battery age
+  was the one number HA was keeping only in short-term state history, to be purged with everything
+  else. Two template mirrors — `sensor.cupboard_ups_runtime` and `sensor.garage_ups_runtime` —
+  carry `state_class: measurement` and read in minutes rather than seconds.
+  - The NUT sensors cannot be fixed in place: `state_class` comes from the integration's
+    `SensorEntityDescription`, not from the entity registry, so `config/entity_registry/update`
+    has nothing to change. Mirrors are the only route.
+  - Both appear in `recorder/list_statistic_ids` with `has_mean: true` (verified 2026-09-12).
+  - Each mirror carries an `availability:` guard on `is_number`. NUT drops these sensors to
+    `unavailable` whenever `upsd` is unreachable — a driver restart on either host does it — and
+    without the guard the template logs a float-conversion error every poll for the duration.
+
 ### Changed
 - **Dropped the dangling `power_sensor: binary_sensor.ac_power` from both SmartIR climate
   platforms** in `configuration.yaml`. That entity does not exist on this instance and never has —

@@ -496,6 +496,35 @@ backup-validate-retry-restore process in constraint #1 — see that section for 
 
 There is **no CI build and no container to update**. Do not run `gh run watch` in this project.
 
+### When `/ha-config` is empty — the stale bind mount
+
+`/ha-config` in this container is a **bind of `/mnt/remotes/192.168.0.21_config` on the unRAID
+host**, and unRAID's `/mnt/remotes` is itself a tmpfs whose CIFS mounts come and go. A bind mount
+captures the target as it was when the container started, and does **not** follow a later
+re-mount. So if Unassigned Devices re-mounts the HA share after this container starts, the host
+sees the files and the container sees an empty directory:
+
+```
+mount | grep ha-config     # tmpfs on /ha-config type tmpfs (rw,relatime,size=1024k,inode64)
+ls /ha-config/             # empty
+```
+
+This is **not** the share being down, and restarting this container to fix it is out of scope
+(it is the Claude Project's territory, and it kills the session doing the work). Deploy through
+the unRAID host instead — it can see the live mount:
+
+```bash
+cat packages/<file>.yaml | ssh -i /root/.ssh/unraid_secretsman root@192.168.0.10 \
+  'cat > /mnt/remotes/192.168.0.21_config/packages/<file>.yaml'
+# then confirm both ends agree
+ssh -i /root/.ssh/unraid_secretsman root@192.168.0.10 'md5sum /mnt/remotes/192.168.0.21_config/packages/<file>.yaml'
+md5sum packages/<file>.yaml
+```
+
+Verified 2026-09-12 deploying `packages/ups_runtime.yaml` this way. Everything downstream is
+unchanged: config-check over REST, then the reload. Note this is SSH to **unRAID**, not to the HA
+host — there is still no shell on HA OS from here, so `ha core check` remains unreachable.
+
 1. Commit and push to `main` (GitHub repo is private).
 2. Copy the verified live file to the mount:
    `cp dashboards/<name>.yaml /ha-config/dashboards/`
