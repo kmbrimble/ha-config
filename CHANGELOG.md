@@ -35,6 +35,47 @@
     `unavailable` whenever `upsd` is unreachable — a driver restart on either host does it — and
     without the guard the template logs a float-conversion error every poll for the duration.
 
+- **Wake-on-LAN for the cameras PC when mains returns** — `wake_on_lan` config entry
+  "Wake cameras PC (Blue Iris)" (`button.wake_cameras_pc`, MAC `6c:3c:8c:30:84:b4`, broadcast
+  `255.255.255.255:9`) plus the automation `cameras_pc_wake_on_power_restore` in
+  `automations.yaml`.
+  - **Why it is needed at all:** the cameras PC and the PoE switch sit on an EcoFlow River 3 Plus
+    in UPS mode, and the EcoFlow has no killpower equivalent — it will not cut its own output
+    after the PC shuts down. So on a typical outage the PC's outlet stays live the whole time,
+    there is never an AC transition, and the machine's BIOS `AC Recovery = On` never fires. It
+    only self-heals if the outage outlasts the entire battery.
+  - **`wake_on_lan` has a config flow as of 2026.9** — worth knowing, because the YAML-only past
+    of this integration is what sends people to `shell_command`. Added over
+    `POST /api/config/config_entries/flow`, options amended over the options-flow endpoint, entity
+    and entry retitled over the websocket registry commands. No `configuration.yaml` edit and no
+    restart. A first pass did use a `shell_command` python one-liner; that was abandoned because
+    **`homeassistant.reload_all` does not set up a YAML integration that was not already
+    loaded** — introducing `shell_command:` for the first time needs a restart, exactly like
+    `wake_on_lan:` would have, so the reason for preferring it evaporated.
+  - **`192.168.0.255` is NOT the broadcast address on this network.** The LAN is a **/22**
+    (`192.168.0.0/22`, confirmed on three hosts), so `192.168.0.255` is an ordinary unicast host
+    address: a magic packet sent there would ARP for a host that does not exist and be dropped,
+    silently. Fixed to `255.255.255.255`, the limited broadcast, which is always flooded to the
+    local segment and never routed. **Any future broadcast-dependent config on this LAN wants
+    `255.255.255.255` or `192.168.3.255`, never `192.168.0.255`.**
+  - **Verified on the wire**, not just by a service call returning 200: a UDP listener on port 9
+    on a third host (the garagepi) received a 102-byte packet from `192.168.0.21` carrying six
+    `FF` sync bytes and the target MAC repeated — for both the button press and a direct
+    `wake_on_lan.send_magic_packet` call.
+  - **Two triggers, because power returns to that group two different ways.** A real outage takes
+    the Meross "Network Cupboard" plug down with it (it is upstream of the EcoFlow on mains), so
+    its power sensor goes `unavailable` and comes back — guarded by a 30s dwell test so an HA
+    restart, which blips every sensor through `unavailable`, does not fire it. A *test* that
+    switches the plug's relay instead leaves the plug online reporting 0 W, so a second
+    `numeric_state above: 20` trigger covers that. Steady draw is ~120 W, so crossing 20 W upward
+    only ever follows an interruption. Note `switch.smart_plug_..._outlet` is **disabled by user**
+    on this instance, so a plug-relay test needs it re-enabled first.
+  - Prerequisites set on the PC itself (Dell OptiPlex 5000) via the `DellBIOSProvider` PowerShell
+    module: BIOS `WakeOnLan` `Disabled` → `LanOnly`, `DeepSleepCtrl` `S4AndS5` → `Disabled`, and
+    Windows Fast Startup off (`HiberbootEnabled` `1` → `0`). That last one is the trap —
+    Microsoft documents that Windows **deliberately disables WoL on a hybrid-shutdown
+    transition**, so a NIC reporting `WakeOnMagicPacket = Enabled` proves nothing on its own.
+
 ### Changed
 - **Dropped the dangling `power_sensor: binary_sensor.ac_power` from both SmartIR climate
   platforms** in `configuration.yaml`. That entity does not exist on this instance and never has —
