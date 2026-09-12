@@ -864,37 +864,19 @@
   alias: Power - Wake cameras PC when mains returns
   description: 'The EcoFlow never cuts its own output, so after EcoFlow Power Manager
     shuts the cameras PC down there is no AC transition for the BIOS AC Recovery
-    setting to act on and the NVR stays off. This wakes it instead.
-
-
-    THE HA START TRIGGER IS THE IMPORTANT ONE. In the dominant scenario HA is not
-    running when mains returns - it was shut down with unRAID at 35% battery - so
-    there is no plug transition for it to observe. It boots, finds the plug already
-    online, and would see nothing at all. So the automation checks on every start
-    whether the NVR is reachable and wakes it if not. The other two triggers only
-    matter while HA stays up: a brief outage takes the Meross "Network Cupboard"
-    plug down (it is upstream of the EcoFlow on mains) so its power sensor goes
-    unavailable and returns, guarded by a 30s dwell test; and a test that switches
-    the plug relay leaves the plug online reporting 0 W, which the load-returned
-    trigger catches. Steady draw is ~120 W.
-
-
-    The 60s delay lets the ping sensor get a reading and gives the PC a chance to
-    be booting on its own. It then presses only if the NVR is not confirmed up, and
-    retries up to five times, 90s apart, until the ping answers.
-
-
-    KNOWN BEHAVIOUR: if you shut the NVR down deliberately and HA restarts, this
-    will wake it. Disable this automation first if that is not what you want.
-
-
-    Requires, on the PC: BIOS WakeOnLan=LanOnly, DeepSleepCtrl=Disabled, and Windows
-    Fast Startup OFF - Windows deliberately disables WoL on a hybrid-shutdown
-    transition. All three set 12 Sep 2026.'
+    setting to act on and the NVR stays off. This wakes it instead. Two triggers
+    because there are two ways power comes back to that group: a real outage takes
+    the Meross "Network Cupboard" plug itself down (it sits upstream of the EcoFlow
+    on mains), so its power sensor goes unavailable and returns - the 30s guard on
+    that path filters out HA restarts, which also blip every sensor through
+    unavailable. A test that switches the plug''s relay instead leaves the plug
+    online reporting 0 W, so the load-returned trigger covers that. Normal draw is
+    ~120 W steady, so crossing 20 W upward only happens after a real interruption.
+    Three presses 30s apart; a magic packet aimed at a machine that is already awake
+    is a no-op. Requires, on the PC: BIOS WakeOnLan=LanOnly, DeepSleepCtrl=Disabled,
+    and Windows Fast Startup OFF - Windows deliberately disables WoL on a
+    hybrid-shutdown transition. All three set 12 Sep 2026.'
   triggers:
-  - trigger: homeassistant
-    event: start
-    id: ha_start
   - trigger: state
     entity_id: sensor.network_switch
     from: unavailable
@@ -906,28 +888,16 @@
     id: load_returned
   conditions:
   - condition: template
-    value_template: '{{ trigger.id != ''back_from_unavailable'' or (trigger.to_state.state
+    value_template: '{{ trigger.id == ''load_returned'' or (trigger.to_state.state
       | is_number and (trigger.to_state.last_changed - trigger.from_state.last_changed).total_seconds()
       > 30) }}'
   actions:
-  - delay: '00:01:00'
-  - condition: template
-    value_template: '{{ not is_state(''binary_sensor.cameras_pc_online'', ''on'') }}'
   - repeat:
+      count: 3
       sequence:
       - action: button.press
         target:
           entity_id: button.wake_cameras_pc
-      - wait_template: '{{ is_state(''binary_sensor.cameras_pc_online'', ''on'') }}'
-        timeout: '00:01:30'
-        continue_on_timeout: true
-      until:
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.cameras_pc_online
-          state: 'on'
-        - condition: template
-          value_template: '{{ repeat.index >= 5 }}'
+      - delay: '00:00:30'
   mode: single
   max_exceeded: silent

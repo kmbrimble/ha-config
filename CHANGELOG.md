@@ -76,6 +76,33 @@
     Microsoft documents that Windows **deliberately disables WoL on a hybrid-shutdown
     transition**, so a NIC reporting `WakeOnMagicPacket = Enabled` proves nothing on its own.
 
+- **`ping` config entry for the cameras PC → `binary_sensor.cameras_pc_online`**, and a rewrite of
+  `cameras_pc_wake_on_power_restore` around it. The first version of that automation **would never
+  have fired**, for a reason worth recording: both its triggers were plug transitions that HA has
+  to *observe*, and **HA is not running when mains returns** — it goes down with unRAID at 35%
+  battery. It boots after power is back, finds the Meross plug already online, and sees nothing. On
+  a cold start HA writes an entity's first state with no previous state, so `from: unavailable`
+  cannot match, and `numeric_state` needs a crossing it never observes. It would only have worked
+  in the case where HA stayed up, which is the case where nothing shut down and no wake is needed.
+  - Fixed with an explicit **`homeassistant` / `event: start`** trigger, which sidesteps the
+    startup semantics entirely: on every start, check whether the NVR is reachable and wake it if
+    not. The plug triggers are kept for the plug-relay test path. **Any future automation that must
+    act on "power came back" wants a start trigger, not a state transition.**
+  - ICMP had to be allowed first. **Both NICs on the cameras PC are on the Windows *Public*
+    firewall profile**, which drops echo requests — the box was unpingable while perfectly alive
+    (the OptiPlex answers fine). A scoped rule was added rather than enabling the broad
+    `FPS-ICMP4-ERQ-In`: `New-NetFirewallRule -Name 'ICMP4-ERQ-In-LAN' -Direction Inbound -Protocol
+    ICMPv4 -IcmpType 8 -Action Allow -Profile Any -RemoteAddress 192.168.0.0/22`.
+  - The automation waits 60 s (ping sensor needs a reading; a machine booting on its own gets a
+    chance), presses only if the NVR is not confirmed up, then retries up to five times 90 s apart
+    until the ping answers. Verified by manual trigger with the NVR up: stopped cleanly at the
+    guard, trace `last_step: action/1`, nothing sent.
+  - Known behaviour: deliberately shutting the NVR down and then restarting HA will wake it.
+  - `switch.smart_plug_..._outlet` must stay disabled, and the EcoFlow outage test must be done at
+    the plug's own button or by unplugging — **not from HA**. The PoE switch feeding the WAPs runs
+    through that plug and the plug is a Wi-Fi device, so switching it off remotely leaves no path
+    to switch it back on.
+
 ### Changed
 - **Dropped the dangling `power_sensor: binary_sensor.ac_power` from both SmartIR climate
   platforms** in `configuration.yaml`. That entity does not exist on this instance and never has —
