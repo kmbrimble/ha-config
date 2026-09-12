@@ -55,13 +55,41 @@ const lastPressAgeS = () => {
   } catch { return null; }
 };
 
+const lightOn = (scheme = 'http') => curl([scheme === 'https' ? '-k' : '-s', `${scheme}://${db.DB_HOST}/bha-api/light-on.cgi`], 'light-on');
+const haPost = (domain, service, body) => {
+  try {
+    return execFileSync('curl', ['-s', '-m', '15', '-o', '/dev/null', '-w', '%{http_code}', '-X', 'POST',
+      '-H', `Authorization: Bearer ${ha.HA_TOKEN}`, '-H', 'Content-Type: application/json',
+      '-d', JSON.stringify(body), `${HA}/api/services/${domain}/${service}`]).toString();
+  } catch (e) { return 'ERR ' + e.message.slice(0, 60); }
+};
+const ALLOW_RESTART = process.env.ALLOW_RESTART === '1';
+
 const STEPS = [
-  ['A image+light-on', () => { const a = curl([`http://${db.DB_HOST}/bha-api/image.cgi`, '-o', '/dev/null', '-w', 'image=%{http_code}'], 'image'); return a + ' | ' + curl([`http://${db.DB_HOST}/bha-api/light-on.cgi`], 'light-on'); }],
-  ['B light-on only', () => curl([`http://${db.DB_HOST}/bha-api/light-on.cgi`], 'light-on')],
+  ['A image+light-on (http)', () => curl([`http://${db.DB_HOST}/bha-api/image.cgi`, '-o', '/dev/null', '-w', 'image=%{http_code}'], 'image') + ' | ' + lightOn()],
+  ['B light-on only (http)', () => lightOn()],
   ['C session+video+light-on', () => {
     const a = curl([`http://${db.DB_HOST}/bha-api/getsession.cgi`, '-o', '/dev/null', '-w', 'session=%{http_code}'], 'session');
-    const b = curl(['-m', '6', `http://${db.DB_HOST}/bha-api/video.cgi`, '-o', '/dev/null', '-w', 'video=%{http_code}'], 'video');
-    return a + ' ' + b + ' | ' + curl([`http://${db.DB_HOST}/bha-api/light-on.cgi`], 'light-on');
+    let b;
+    try { b = 'video=' + execFileSync('curl', ['-s', '-m', '6', '-u', auth, '-o', '/dev/null', '-w', '%{size_download}B', `http://${db.DB_HOST}/bha-api/video.cgi`]).toString(); }
+    catch (e) { b = 'video=timeout-as-expected'; }
+    return a + ' ' + b + ' | ' + lightOn();
+  }],
+  ['D light-on over https', () => lightOn('https')],
+  ['E let the 3 min timer lapse, then press', async () => {
+    const reenable = () => haPost('automation', 'turn_on', { entity_id: 'automation.front_gate_ir_on_at_night' });
+    process.once('SIGTERM', reenable); process.once('SIGINT', reenable); process.once('exit', reenable);
+    const off = haPost('automation', 'turn_off', { entity_id: 'automation.front_gate_ir_on_at_night' });
+    await sleep(230e3);
+    const on = haPost('automation', 'turn_on', { entity_id: 'automation.front_gate_ir_on_at_night' });
+    const press = haPost('button', 'press', { entity_id: 'button.front_gate_ir' });
+    return `automation off=${off} on=${on} press=${press}`;
+  }],
+  ['F restart.cgi (device reboot, ~120 s)', async () => {
+    if (!ALLOW_RESTART) return 'skipped (ALLOW_RESTART not set)';
+    const r = curl([`http://${db.DB_HOST}/bha-api/restart.cgi`], 'restart');
+    await sleep(150e3);
+    return `restart -> ${r}; after wait light-on -> ${lightOn()}`;
   }],
 ];
 
@@ -88,7 +116,7 @@ const STEPS = [
 
   log(`watchdog start, ${DUR / 1000}s, sample ${STEP / 1000}s`);
   const t0 = Date.now();
-  let offRun = 0, ladder = 0, cooldownUntil = 0, fails = 0;
+  let offRun = 0, ladder = 0, cooldownUntil = 0, fails = 0, notifyAfter = 0;
   while (Date.now() - t0 < DUR) {
     let s = null;
     try { s = await stat(); fails = 0; }
@@ -109,9 +137,20 @@ const STEPS = [
         } else {
           const [name, fn] = STEPS[Math.min(ladder, STEPS.length - 1)];
           log(`IR off ${offRun} samples (last press ${Math.round(age)}s ago) -> trying ${name}`);
-          log(`  ${name} ->`, fn());
+          log(`  ${name} ->`, await fn());
           ladder++;
-          if (ladder >= STEPS.length) { cooldownUntil = Date.now() + 300e3; log('  ladder exhausted, 5 min cooldown'); }
+          if (ladder >= STEPS.length) {
+            cooldownUntil = Date.now() + 1800e3;
+            log('  ladder exhausted, 30 min cooldown');
+            if (Date.now() > notifyAfter) {
+              notifyAfter = Date.now() + 6 * 3600e3;
+              log('  notifying HA ->', haPost('persistent_notification', 'create', {
+                title: 'DoorBird IR stuck',
+                message: 'The front gate IR is not lighting and none of the API recovery steps worked. Opening the DoorBird app is the known cure. See /tmp/dbir/irwatch.log in the claude-code container.',
+                notification_id: 'doorbird_ir_stuck',
+              }));
+            }
+          }
           else cooldownUntil = Date.now() + 25e3;
           offRun = OFF_SAMPLES; // keep acting on the next evaluation
         }
