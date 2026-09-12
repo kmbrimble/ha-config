@@ -47,6 +47,19 @@ const curl = (args, label) => {
   try { return execFileSync('curl', ['-s', '-m', '10', '-u', auth, ...args], { maxBuffer: 8e6 }).toString().replace(/\s+/g, ' ').slice(0, 120); }
   catch (e) { return `ERR ${label} ${e.message.slice(0, 80)}`; }
 };
+// Cheap reachability probe: distinguishes a software restart (connection refused, web
+// server not up yet) from the device losing power (connect timeout / unreachable).
+const net = require('net');
+const probe = (port = 80, timeout = 2500) => new Promise((resolve) => {
+  const sock = new net.Socket(); let done = false;
+  const end = (r) => { if (!done) { done = true; try { sock.destroy(); } catch {} resolve(r); } };
+  sock.setTimeout(timeout);
+  sock.once('connect', () => end('open'));
+  sock.once('timeout', () => end('timeout'));
+  sock.once('error', (e) => end(e.code === 'ECONNREFUSED' ? 'refused' : (e.code || 'error').toLowerCase()));
+  sock.connect(port, db.DB_HOST);
+});
+
 const lastPressAgeS = () => {
   try {
     const s = JSON.parse(execFileSync('curl', ['-s', '-m', '10', '-H', `Authorization: Bearer ${ha.HA_TOKEN}`,
@@ -125,7 +138,8 @@ const STEPS = [
       if (fails >= 3) { try { await browser.close(); } catch {} browser = await chromium.launch(); page = await browser.newPage(); log('browser relaunched'); fails = 0; }
     }
     if (s) {
-      log(`state luma=${s.luma} hotspot=${s.hotspot} chroma=${s.chroma}`);
+      const tcp80 = await probe(80), tcp554 = await probe(554);
+      log(`state luma=${s.luma} hotspot=${s.hotspot} chroma=${s.chroma} tcp80=${tcp80} tcp554=${tcp554}`);
       const lit = s.hotspot > OFF_HOTSPOT;
       if (lit) { if (offRun >= OFF_SAMPLES) log(`recovered after step ${ladder}`); offRun = 0; ladder = 0; }
       else offRun++;
