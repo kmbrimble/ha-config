@@ -513,6 +513,25 @@ the repo would otherwise show they exist. Their definition:
 
 If you need to change them, edit the config entry's options, not a YAML file.
 
+### Swapping one entity for another when statistics are involved — order matters
+
+Two things bite, both learned 2026-09-13 while replacing the YAML mirrors with helpers:
+
+- **A statistic_id already in use blocks the migration, silently.** Renaming the new helper onto
+  the freed `sensor.garage_ups_runtime` logged
+  `recorder.table_managers.statistics_meta: Cannot rename statistic_id
+  'sensor.garage_ups_runtime_2' to 'sensor.garage_ups_runtime' because the new statistic_id is
+  already in use` — the entity rename succeeded, the statistics did not follow, and the old row
+  stayed orphaned. Here it happened to be the outcome we wanted (the series is continuous across
+  the swap, because the surviving metadata row is the original one and the new entity feeds it),
+  but do not rely on that. **Clear the outgoing entity's statistics before renaming a replacement
+  onto its entity_id**, and check `recorder/list_statistic_ids` afterwards.
+- **Spook's orphaned-statistics repair is point-in-time.** Removing an entity and clearing its
+  statistics a minute later is enough for Spook's watcher to fire in the gap, and the repair issue
+  then persists even though nothing is orphaned any more. Reloading the Spook config entry re-runs
+  the scan and drops it: `POST /api/config/config_entries/entry/<spook entry_id>/reload`. Verify
+  against `recorder/list_statistic_ids` before believing the repair.
+
 ## Pre-change backup
 
 Before the first write of a session, copy the current live dashboard file to

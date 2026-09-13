@@ -118,8 +118,16 @@
     `POST /api/config/config_entries/flow` with `{"next_step_id": "sensor"}`, and availability goes
     in an `additional_options` **mapping** (passing `true` errors with `expected a mapping`).
   - Statistics: `sensor.server_rack_ups_runtime` starts fresh (one day of the old series cleared);
-    `sensor.garage_ups_runtime` kept its id and its series. The stale
-    `sensor.garage_ups_runtime_2` metadata from the brief id collision was cleared too.
+    `sensor.garage_ups_runtime` kept its id and a continuous series — though **not by the mechanism
+    intended**. The recorder logged `Cannot rename statistic_id 'sensor.garage_ups_runtime_2' to
+    'sensor.garage_ups_runtime' because the new statistic_id is already in use`: the entity rename
+    went through, the statistics migration did not, and the surviving metadata row is the original
+    YAML sensor's, now fed by the helper. Right answer, wrong route — clear the outgoing entity's
+    statistics *before* renaming a replacement onto its id. The orphaned
+    `sensor.garage_ups_runtime_2` row was cleared.
+  - **Spook's orphaned-statistics repair is point-in-time** and fired in the ~1 minute between
+    removing the old entities and clearing their statistics. It persisted after the statistics were
+    gone; reloading the Spook config entry re-ran the scan and dropped it. See CLAUDE.md.
 
 ### Changed
 - **All 28 `sensor.cupboard_*` entities renamed to `sensor.server_rack_*`**, and the NUT config
