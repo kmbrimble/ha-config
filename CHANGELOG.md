@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+### Pending deployment - candidate only, NOT live
+These are committed to `dashboards/kiosk-candidate.yaml` and have **not** been tested or
+promoted, because `/ha-config` in the agent container is currently an empty 1 MB tmpfs instead
+of the SMB mount of HA's `/config`. Nothing can be copied to the mount, so the candidate cannot
+be served, the Playwright suite cannot run against it, and `kiosk-main.yaml` was deliberately
+left untouched under the green-candidate rule. HA itself is fine and still serving the current
+live dashboard. **Restore the mount, then: deploy candidate -> `npm run test:e2e:kiosk` ->
+promote.**
+
+- **Kiosk fuel chart y-axis is now all-time, not window-relative.** `min_bound_range: 20`
+  replaced with `lower_bound: '~210'` / `upper_bound: '~233'`. Previously the axis rescaled to
+  whatever was on the chart, so a fortnight sitting near the top of the price cycle redrew as a
+  full-height chart and the context that it had been much cheaper was lost. The `~` prefix makes
+  each bound soft - `getBoundary` does `Math.min(210, ...dataMins)` / `Math.max(233, ...dataMaxes)`
+  - so a new record still draws correctly. Values are the all-time recorded extremes from
+  long-term statistics as at 2026-09-13 (212.9 Sunnybank 29 Aug, 230.9 Kenmore 11 Sep), rounded
+  outwards for ~2c of clearance. `min_bound_range` was dropped: a 23c bounded span never
+  triggered it. **No visible change today** - the 336h window currently spans the whole of
+  recorded history (data starts 29 Aug), so in-window and all-time extremes are identical. The
+  benefit accrues as history outgrows the window.
+  - MAINTENANCE: the bounds are static numbers. A record set today is honoured while it is
+    inside the 336h window, but reverts once it scrolls out. Refresh from
+    `recorder/statistics_during_period` periodically to keep "all-time" true.
+- **`update_interval: 300` added so a failed chart load retries in minutes, not two hours.**
+  Reported 2026-09-13: on a Kiosk boot the chart came up as a ~52px card showing only
+  `<ha-spinner>`. That is the same symptom `cache: false` fixed, from a *different* cause, so the
+  earlier claim that the localforage cache was *the* root cause was too strong - it was one of
+  two. Without `update_interval` the card's only periodic refresh is `setNextUpdate()`'s
+  `setInterval(..., (1 / points_per_hour) hours)`, which at `points_per_hour: 0.5` is a **two
+  hour** retry, so one failed fetch leaves the chart empty until the next tick. Setting
+  `update_interval` switches to `connectedCallback`'s `setInterval(updateOnInterval, 300s)` and
+  makes `setNextUpdate` a no-op. `updateOnInterval` only fetches when `stateChanged` is set, and
+  qld_fuel rewrites these sensors every ~2 hours (attributes change even when the price does
+  not), so the worst case is no worse than the two hours it already was and the normal case is
+  recovery within 5 minutes. Side benefit: a price change now reaches the chart promptly.
+
 ### Added
 - **`Climate` Matter bridge in home-assistant-matter-hub, exposing both air conditioners to Google
   Home.** Bridge id `0b65a0e3c4f04b8492c1eb756579a421`, port 5543, filter `domain: climate`. Both
