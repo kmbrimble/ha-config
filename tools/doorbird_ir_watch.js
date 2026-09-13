@@ -103,8 +103,19 @@ const STEPS = [
     const r = curl([`http://${db.DB_HOST}/bha-api/restart.cgi`], 'restart');
     await sleep(150e3);
     return `restart -> ${r}; after wait light-on -> ${lightOn()}`;
-  }],
+  }, true],
+  ['G PoE cold boot on the switch port', async () => {
+    if (!ALLOW_RESTART) return 'skipped (ALLOW_RESTART not set)';
+    let out;
+    try { out = execFileSync('/projects/ha-config/tools/doorbird_poe_cycle.sh', ['15'], { timeout: 300e3 }).toString().replace(/\s+/g, ' ').slice(-200); }
+    catch (e) { out = 'ERR ' + e.message.slice(0, 120); }
+    await sleep(120e3);
+    return `${out} | after boot light-on -> ${lightOn()}`;
+  }, true],
 ];
+// Steps flagged true are destructive and run at most once per watchdog run.
+const ONCE = new Set(STEPS.map(([n, , once]) => (once ? n : null)).filter(Boolean));
+const used = new Set();
 
 (async () => {
   let browser = await chromium.launch(), page = await browser.newPage();
@@ -149,7 +160,11 @@ const STEPS = [
           log(`IR off but automation not pressing (last press ${age}s ago) - not acting`);
           cooldownUntil = Date.now() + 300e3;
         } else {
-          const [name, fn] = STEPS[Math.min(ladder, STEPS.length - 1)];
+          let idx = Math.min(ladder, STEPS.length - 1);
+          while (idx < STEPS.length && ONCE.has(STEPS[idx][0]) && used.has(STEPS[idx][0])) idx++;
+          if (idx >= STEPS.length) idx = 0;   // everything one-shot is spent: fall back to the cheap step
+          const [name, fn] = STEPS[idx];
+          if (ONCE.has(name)) used.add(name);
           log(`IR off ${offRun} samples (last press ${Math.round(age)}s ago) -> trying ${name}`);
           log(`  ${name} ->`, await fn());
           ladder++;
