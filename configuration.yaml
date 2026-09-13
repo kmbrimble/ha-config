@@ -111,10 +111,6 @@ climate:
     humidity_sensor: sensor.bedroom_remote_humidity
 
 sensor:
-  - platform: time_date
-    display_options:
-      - time
-
   # 24h Peak Power Tracker (Purely for interest/stats)
   - platform: statistics
     name: "Grid Power Peak (24h)"
