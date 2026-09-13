@@ -103,7 +103,37 @@
     through that plug and the plug is a Wi-Fi device, so switching it off remotely leaves no path
     to switch it back on.
 
+- **UPS runtime mirrors moved from `packages/ups_runtime.yaml` to UI template helpers, and linked
+  to their NUT devices.** They were floating in the Overview dashboard's catch-all Sensors card
+  because they had no device. `packages/ups_runtime.yaml` is deleted; the two entities now live as
+  `template` config entries. See "Template entities and devices" in CLAUDE.md for their full
+  definition, since the repo no longer holds it.
+  - **`device_id:` is not valid in YAML template config** (upstream #153286, closed as not
+    planned) and it fails *silently*: config-check returned `{"result":"valid"}` and the reload
+    then dropped both sensors to `unavailable` with `restored: true`. Only the system log showed
+    `Invalid config for 'template' ... 'device_id' is an invalid option`. Constraint #1 gains a
+    step 6 because of this — **verify entity states after every reload, not just the config
+    check.**
+  - The UI template helper flow does take `device_id`, over
+    `POST /api/config/config_entries/flow` with `{"next_step_id": "sensor"}`, and availability goes
+    in an `additional_options` **mapping** (passing `true` errors with `expected a mapping`).
+  - Statistics: `sensor.server_rack_ups_runtime` starts fresh (one day of the old series cleared);
+    `sensor.garage_ups_runtime` kept its id and its series. The stale
+    `sensor.garage_ups_runtime_2` metadata from the brief id collision was cleared too.
+
 ### Changed
+- **All 28 `sensor.cupboard_*` entities renamed to `sensor.server_rack_*`**, and the NUT config
+  entry retitled `Server Rack UPS (CP1600)`. Only the network switch is actually in the cupboard;
+  the CP1600 and everything it protects are on the rack. The device was already renamed to
+  "Server Rack" by hand, but a device rename does not rewrite entity IDs, which is what left them
+  inconsistent. Long-term statistics followed the renames automatically — the `statistics` rows are
+  now under the new IDs with no gap, which is why this is worth doing through the entity registry
+  rather than by deleting and re-adding the integration.
+  - The underlying NUT alias on unRAID is still `cupboard` (`upsc cupboard@192.168.0.10`), and the
+    device's non-user name still reads "Cupboard". Changing that means editing `ups.conf`,
+    `upsmon.conf`, the staged-shutdown script and the HA config entry's stored UPS name — load
+    bearing for killpower, for a cosmetic gain. Left alone deliberately.
+
 - **Dropped the dangling `power_sensor: binary_sensor.ac_power` from both SmartIR climate
   platforms** in `configuration.yaml`. That entity does not exist on this instance and never has —
   `/api/states` has no record of it — so both `climate.bedroom_ac` and `climate.living_room_ac`

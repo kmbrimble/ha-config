@@ -461,6 +461,14 @@ conditional cards themselves are no longer pinned by the baseline.
    5. **Never reload/restart on unvalidated config.** A passing config-check is a hard gate
       before any live reload — this is what replaces the old stop-and-hand-back behaviour as the
       actual safety mechanism.
+   6. **A passing config-check is necessary, not sufficient — always verify the entities after
+      the reload.** `/api/config/core/check_config` validates the top level but **does not
+      validate platform schemas inside `template:`**. Proven 2026-09-13: a `device_id:` key added
+      to two template sensors returned `{"result":"valid"}`, and the reload then **silently
+      dropped both entities** — they went `unavailable` with `restored: true`, and the only
+      evidence was `ERROR homeassistant.config: Invalid config for 'template' ... 'device_id' is
+      an invalid option` in the system log. After any reload, read back the states of everything
+      you touched, and check `system_log/list` for `Invalid config for` lines.
 2. **Never commit secrets.** `secrets.yaml`, tokens, and the recorder database URL must not enter
    the repo or its history. `.gitignore` must cover `secrets.yaml`, `*.db`, `*.log`,
    `.storage/`, and `test-e2e/screenshots/`.
@@ -478,6 +486,32 @@ conditional cards themselves are no longer pinned by the baseline.
 7. **The `condition:` on each sensor in `packages/fuel_price_trends.yaml` is load-bearing.** They
    read as redundant guards against `unknown`/`unavailable`; removing either silently corrupts the
    latched price the Kiosk shows. That file's header says which and why.
+
+## Template entities and devices — why two of them are not in this repo
+
+**A YAML template entity cannot be linked to a device.** `device_id:` is not a valid option under
+`template:` (upstream issue #153286, closed as not planned) — and worse, adding it does not fail
+loudly: config-check passes and the reload drops the entity. The **UI template helper** (a
+`template` config entry, created over `POST /api/config/config_entries/flow` with
+`next_step_id: sensor`) *does* take a `device_id`, plus `unit_of_measurement`, `device_class`,
+`state_class`, and an `additional_options: {availability: ...}` mapping.
+
+This matters because the Overview dashboard is the auto-generated `original-states` strategy: it
+groups entities by device, and anything without a device lands in a catch-all Sensors card. So an
+entity that must appear alongside its device has to be a config-entry helper.
+
+`sensor.server_rack_ups_runtime` and `sensor.garage_ups_runtime` are therefore **storage-managed
+helpers, not YAML** — the only two entities of this kind. They are listed here because nothing in
+the repo would otherwise show they exist. Their definition:
+
+| | |
+|---|---|
+| state | `{% set s = states('sensor.<ups>_battery_runtime') %}{{ (s \| float / 60) \| round(1) if s \| is_number else none }}` |
+| unit / class | `min`, `duration`, `state_class: measurement` |
+| availability | `{{ states('sensor.<ups>_battery_runtime') \| is_number }}` |
+| device | the matching NUT device |
+
+If you need to change them, edit the config entry's options, not a YAML file.
 
 ## Pre-change backup
 
