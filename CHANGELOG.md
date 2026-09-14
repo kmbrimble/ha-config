@@ -2,15 +2,34 @@
 
 ## [Unreleased]
 
-### Pending deployment - candidate only, NOT live
-These are committed to `dashboards/kiosk-candidate.yaml` and have **not** been tested or
-promoted, because `/ha-config` in the agent container is currently an empty 1 MB tmpfs instead
-of the SMB mount of HA's `/config`. Nothing can be copied to the mount, so the candidate cannot
-be served, the Playwright suite cannot run against it, and `kiosk-main.yaml` was deliberately
-left untouched under the green-candidate rule. HA itself is fine and still serving the current
-live dashboard. **Restore the mount, then: deploy candidate -> `npm run test:e2e:kiosk` ->
-promote.**
+### Kiosk dashboard
+Promoted from `dashboards/kiosk-candidate.yaml` to `dashboards/kiosk-main.yaml` and deployed live
+(issue #9's card-height reduction shipped in the same promotion as the fuel-chart y-axis change
+below, which had been sitting candidate-only pending the SMB mount coming back). Both are now
+live and green against `npm run test:e2e:kiosk` run with `TARGET=live`.
 
+- **Outside/Living Room/Bedroom card heights cut 20%** (issue #9, Kieren-scoped to these three
+  cards only — not the iframe, camera panes, weather/fuel cards, person buttons, or fuel trend
+  graph). Outside: `height: 133px` -> `106px`. Living Room and Bedroom: `aspect-ratio: 3 / 2` ->
+  `15 / 8` (same derivation - at fixed column width, `aspect-ratio 1.5 / 0.8 = 1.875 = 15/8` gives
+  exactly an 80%-of-original height).
+  - **Why the cards also moved down, not just got shorter:** the middle column's `card_mod`
+    (`dashboards/kiosk-main.yaml`, `#root > hui-card:nth-last-child(4) { margin-top: auto }`)
+    bottom-anchors the `[Outside, Living/Bedroom row, fuel row, mini-graph]` cluster to the
+    bottom of the 1440px column. Freeing 54px (27px off each of the two shrunk elements) doesn't
+    get reclaimed upward - it grows the auto top-margin above Outside by 54px instead, since the
+    cluster stays pinned to the column's bottom edge. That is why the fuel row and mini-graph
+    below are unaffected (the freed space is entirely absorbed above them) while Outside and the
+    Living/Bedroom row both shift down. Accepted as-is: the literal 20% cut is what was asked for.
+  - Geometry baseline (`test-e2e/baselines/kiosk-{candidate,live}.json`), old -> new:
+    - Outside: `x1740,y825,w407,h133` -> `x1740,y878,w407,h106`
+    - Living Room: `x1740,y966,w200,h133` -> `x1740,y992,w200,h106`
+    - Bedroom: `x1948,y966,w200,h133` -> `x1948,y992,w200,h106`
+  - No content clipping at the reduced height - verified visually in
+    `test-e2e/screenshots/kiosk-{candidate,live}-3440x1440.png`. Font sizes are `cqw` (container
+    *width*-relative) so they didn't shrink with the height; the flex-centered layout absorbed the
+    20% cut in the (width-relative, therefore unchanged) padding/gap margins instead of clipping
+    the text.
 - **Kiosk fuel chart y-axis is now all-time, not window-relative.** `min_bound_range: 20`
   replaced with `lower_bound: '~210'` / `upper_bound: '~233'`. Previously the axis rescaled to
   whatever was on the chart, so a fortnight sitting near the top of the price cycle redrew as a
