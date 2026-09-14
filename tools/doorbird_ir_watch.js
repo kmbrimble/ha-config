@@ -100,6 +100,9 @@ const STEPS = [
   }],
   ['F restart.cgi (device reboot, ~120 s)', async () => {
     if (!ALLOW_RESTART) return 'skipped (ALLOW_RESTART not set)';
+    // A warm reboot was proven not to fix the IR on 13 Sep (switch log shows the device
+    // really did reboot at 19:04 and the LEDs stayed dark), so it is skippable.
+    if (process.env.SKIP_WARM_RESTART === '1') return 'skipped (SKIP_WARM_RESTART=1)';
     // Log the HTTP status too: restart.cgi needs the "API operator" permission and a 401
     // comes back with an empty body, which is indistinguishable from success otherwise.
     const r = curl([`http://${db.DB_HOST}/bha-api/restart.cgi`, '-w', ' http=%{http_code}'], 'restart');
