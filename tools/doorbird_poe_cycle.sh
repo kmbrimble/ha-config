@@ -12,8 +12,11 @@
 # Usage: doorbird_poe_cycle.sh [off-seconds, default 15]
 set -u
 OFF_SECONDS="${1:-15}"
-PORT="${PORT:-two-gigabitEthernet 1/0/1}"
+DRY_RUN="${DRY_RUN:-0}"          # 1 = run the same CLI path but never actually cut power
 set -a; . /projects/unraid-ops/.env; set +a
+# NB: .env defines PORT for something else, so the switch port has its own name and is
+# read AFTER the .env is sourced. Getting this wrong silently pointed the CLI at "8765".
+SW_PORT="${SW_PORT:-two-gigabitEthernet 1/0/1}"
 SSHOPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 \
  -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa \
  -o KexAlgorithms=+diffie-hellman-group14-sha1,diffie-hellman-group1-sha1 -o Ciphers=+aes128-cbc,3des-cbc"
@@ -28,11 +31,13 @@ run_cli() {
     | tr -d '\r' | sed 's/\x1b\[[0-9;]*[A-Za-z]//g'
 }
 
-echo "== PoE off on $PORT for ${OFF_SECONDS}s"
-run_cli 'enable' 'configure' "interface $PORT" 'power inline supply disable' 'end' | tail -6
+FIRST_ACTION='power inline supply disable'
+[ "$DRY_RUN" = "1" ] && FIRST_ACTION='power inline supply enable'
+echo "== PoE off on $SW_PORT for ${OFF_SECONDS}s (dry_run=$DRY_RUN)"
+run_cli 'enable' 'configure' "interface $SW_PORT" "$FIRST_ACTION" 'end' | tail -8
 sleep "$OFF_SECONDS"
 echo "== PoE back on"
-run_cli 'enable' 'configure' "interface $PORT" 'power inline supply enable' 'end' | tail -6
+run_cli 'enable' 'configure' "interface $SW_PORT" 'power inline supply enable' 'end' | tail -6
 sleep 3
 echo "== port state"
 run_cli 'enable' 'show power inline information interface' | grep -E "Tw1/0/1|Power-Status"

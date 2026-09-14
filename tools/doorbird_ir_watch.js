@@ -100,7 +100,9 @@ const STEPS = [
   }],
   ['F restart.cgi (device reboot, ~120 s)', async () => {
     if (!ALLOW_RESTART) return 'skipped (ALLOW_RESTART not set)';
-    const r = curl([`http://${db.DB_HOST}/bha-api/restart.cgi`], 'restart');
+    // Log the HTTP status too: restart.cgi needs the "API operator" permission and a 401
+    // comes back with an empty body, which is indistinguishable from success otherwise.
+    const r = curl([`http://${db.DB_HOST}/bha-api/restart.cgi`, '-w', ' http=%{http_code}'], 'restart');
     await sleep(150e3);
     return `restart -> ${r}; after wait light-on -> ${lightOn()}`;
   }, true],
