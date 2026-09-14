@@ -189,7 +189,7 @@ views:
           hum_entity: sensor.lower_deck_humidity
         card_mod:
           style: |
-            ha-card { height: 106px; container-type: inline-size; }
+            ha-card { height: 133px; container-type: inline-size; }
         styles:
           card:
           - background-color: '#1a1a1a'
@@ -225,7 +225,7 @@ views:
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 15 / 8; container-type: inline-size; }
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -253,7 +253,7 @@ views:
           show_icon: false
           card_mod:
             style: |
-              ha-card { aspect-ratio: 15 / 8; container-type: inline-size; }
+              ha-card { aspect-ratio: 3 / 2; container-type: inline-size; }
           styles:
             card:
             - background-color: '#1a1a1a'
@@ -523,45 +523,12 @@ views:
         smoothing: false
         line_width: 2
         height: 245
-        # Y-AXIS BOUNDS ARE ALL-TIME, NOT WINDOW-RELATIVE. Without these the axis rescales to
-        # whatever is currently on the chart, so a fortnight sitting near the top of the cycle
-        # redraws as a full-height chart and the fact that it has been much cheaper is lost.
-        # The `~` prefix makes each bound SOFT: the value is a floor/ceiling that still expands
-        # if live data goes past it (getBoundary does Math.min(210, ...dataMins) and
-        # Math.max(233, ...dataMaxes)), so a new record still draws correctly.
-        #
-        # Values are the all-time recorded extremes from long-term statistics as at 2026-09-13 -
-        # 212.9 (Sunnybank, 29 Aug) to 230.9 (Kenmore, 11 Sep) - rounded outwards to give the
-        # lines about 2c of clearance from the card edges.
-        #
-        # MAINTENANCE: these are static numbers. A new record set today is honoured while it is
-        # inside the 336h window, but once it scrolls out the axis reverts to these. Refresh them
-        # from `recorder/statistics_during_period` occasionally to keep "all-time" true.
-        #
-        # min_bound_range: 20 was removed - it existed to stop the axis collapsing on a flat
-        # window, which these bounds now do properly, and a 23c bounded span never triggered it.
-        lower_bound: '~210'
-        upper_bound: '~233'
+        min_bound_range: 20
         value_factor: -2
         decimals: 3
         unit: '$/L'
         hour24: true
         cache: false
-        # RETRY CADENCE. Without update_interval the card's only periodic refresh is
-        # setNextUpdate()'s `setInterval(..., (1 / points_per_hour) hours)` - at
-        # points_per_hour 0.5 that is a TWO HOUR retry. So a single failed fetch (seen
-        # 2026-09-13 on a Kiosk boot: a 52px card showing only <ha-spinner>) leaves the chart
-        # empty for up to two hours, which is the other half of the original "spinner for
-        # hours" complaint that `cache: false` did not cover.
-        #
-        # Setting update_interval switches the card to connectedCallback's
-        # `setInterval(updateOnInterval, update_interval * 1000)` and makes setNextUpdate a
-        # no-op. updateOnInterval only fetches when `stateChanged` is set, and qld_fuel
-        # rewrites these sensors roughly every 2 hours (attributes change even when the price
-        # does not), so the worst case is no worse than the 2 hours it already was, and the
-        # normal case is recovery within 5 minutes. It also means a price change reaches the
-        # chart promptly instead of waiting for the next 2-hourly tick.
-        update_interval: 300
         show:
           name: false
           icon: false
