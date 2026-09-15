@@ -11,3 +11,7 @@ playwright-report/
 # Never back up .storage registries into the repo - they contain integration credentials
 backups/core.*
 backups/*config_entries*
+
+# Python bytecode - swept in accidentally 2026-09-15 by a `git add -A`
+__pycache__/
+*.pyc
