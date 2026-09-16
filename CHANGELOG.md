@@ -21,6 +21,42 @@ through `tools/deploy_lock.py push`; CLAUDE.md's Deploy and verify section requi
 - Out of scope, documented as such: edits made in the HA UI, HA rewriting `automations.yaml`, and
   restarting this container to fix a stale bind.
 
+### Kiosk dashboard: daily energy chart (issue #16)
+Added to the middle column between the person cards and the Outside card, promoted candidate ->
+live and deployed.
+
+- **What it shows:** the last 14 complete days of Nectr usage, drawn as stacked columns: grid
+  (orchid) with controlled load (blue) on top, and solar export as a negative orange column. Three
+  reference lines span the window: the all-history daily maximum and minimum of grid + controlled
+  load (solid) and the daily average (dashed). The window ends at yesterday because Nectr
+  publishes a day's usage the next day.
+- **Deviation from the issue:** the issue asked for peak/shoulder/off-peak segments. Kieren's
+  plan is single-rate and Nectr only reports grid/controlled-load/export per hour, so the four
+  tariff segments became grid + controlled load (agreed 2026-09-16).
+- **Card:** `custom:apexcharts-card` v2.2.3, reinstalled through HACS and added to
+  `lovelace: resources:` (it had been dropped on 2026-09-04). No other installed card can stack
+  columns, draw a negative series and overlay reference lines.
+- **Data:** `www/kiosk-energy.js` is deployed to `/config/www/` and loaded as a resource
+  (`/local/kiosk-energy.js`). It reads the nectr integration's external statistics
+  (`nectr:a_6cffe20e_*`) with one shared, 5-minute-cached websocket call, and all six series'
+  `data_generator`s delegate to it. It has unit tests: `npm run test:unit`
+  (`tools/tests/kiosk-energy.test.js`). The first deploys predate the deploy lock (plain `cp`); later ones
+  go through `tools/deploy_lock.py`.
+- **Prerequisite fixed upstream:** nectr-energy v1.2.10 (kmbrimble/nectr-energy#47). The
+  integration had been in setup_retry: Nectr dropped two GraphQL fields and the query failed with
+  a 400. Its hourly history was also corrupted, because the recorder compiled statistics for the
+  same ids the backfill imported into. History now lives in external statistics and was
+  re-backfilled (17 Aug - 15 Sep 2026).
+- **Layout:** the column's bottom-anchor selector moved from `nth-last-child(4)` to
+  `nth-last-child(5)` so the chart sits directly above Outside. Chart box `x1740,y588,w407,h283`
+  (cut 20% from the first cut's 354px at Kieren's request: apex `chart.height` 300 -> 229).
+  Every other card's geometry is unchanged (the baseline diff only adds the new card). With a
+  person card visible, that card ends at y480, leaving a 108px gap above the chart;
+  `scrollHeight` stays 1440.
+- **Bug found while building:** apexcharts-card passes a window start 1ms after midnight, which
+  silently dropped the oldest column (13 bars instead of 14). Series are now windowed by the
+  column's midday. There is a regression test for it.
+
 ### Kiosk dashboard
 Promoted from `dashboards/kiosk-candidate.yaml` to `dashboards/kiosk-main.yaml` and deployed live
 (issue #9's card-height reduction shipped in the same promotion as the fuel-chart y-axis change

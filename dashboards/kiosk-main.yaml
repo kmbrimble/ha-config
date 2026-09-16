@@ -35,7 +35,9 @@ views:
             flex-direction: column !important;
           }
           #root { height: 100% !important; }
-          #root > hui-card:nth-last-child(4) { margin-top: auto !important; }
+          /* nth-last-child(5) is the energy chart: it and everything below it are bottom-anchored,
+             so the chart sits directly above the Outside card whether or not a person card shows. */
+          #root > hui-card:nth-last-child(5) { margin-top: auto !important; }
           ha-card { background: transparent !important; border: none; box-shadow: none; }
       cards:
       - type: conditional
@@ -180,6 +182,115 @@ views:
                   }
                   return `<div style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#222;color:#888;font-weight:bold;font-size:14px;">NO GPS DATA</div>`;
                 ]]]
+      # ENERGY USAGE, issue #16. Last 14 complete days of Nectr usage as stacked columns (grid,
+      # then controlled load on top), solar export as a negative column, and reference lines at
+      # the all-history daily min and max (solid) and average (dashed) of grid + controlled load.
+      #
+      # The plan is single-rate, so there is no peak/shoulder/off-peak split to show; the issue's
+      # four tariff segments collapse to grid + controlled load.
+      #
+      # All six series get their data from window.kioskEnergy (www/kiosk-energy.js, loaded as a
+      # lovelace resource), which reads the nectr integration's external statistics. `entity` is
+      # only a carrier - apexcharts-card requires one - and a state change on it triggers a refresh.
+      # The window ends at yesterday because Nectr publishes a day's usage the next day.
+      - type: custom:apexcharts-card
+        card_mod:
+          style: |
+            ha-card {
+              background: #1a1a1a !important;
+              border-radius: 6px !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+        graph_span: 14d
+        span:
+          end: day
+          offset: -1d
+        stacked: true
+        update_interval: 30min
+        header:
+          show: true
+          title: Daily energy (kWh)
+          show_states: false
+        yaxis:
+        - decimals: 0
+          apex_config:
+            tickAmount: 5
+        apex_config:
+          chart:
+            height: 229
+            background: transparent
+            animations:
+              enabled: false
+          plotOptions:
+            bar:
+              columnWidth: 70%
+          dataLabels:
+            enabled: false
+          tooltip:
+            enabled: false
+          legend:
+            show: true
+            position: bottom
+            fontSize: 13px
+          xaxis:
+            labels:
+              datetimeFormatter:
+                day: d
+          grid:
+            borderColor: '#333'
+        series:
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Grid
+          type: column
+          show:
+            legend_value: false
+          color: 'orchid'
+          data_generator: return window.kioskEnergy.series(hass, 'grid', start, end);
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Controlled load
+          type: column
+          show:
+            legend_value: false
+          color: '#4fc3f7'
+          data_generator: return window.kioskEnergy.series(hass, 'controlled_load', start, end);
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Solar export
+          type: column
+          show:
+            legend_value: false
+          color: '#ffb74d'
+          data_generator: return window.kioskEnergy.series(hass, 'export', start, end);
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Max
+          type: line
+          color: '#e0e0e0'
+          stroke_width: 1.5
+          stroke_dash: 0
+          show:
+            in_legend: false
+            legend_value: false
+          data_generator: return window.kioskEnergy.series(hass, 'max', start, end);
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Min
+          type: line
+          color: '#e0e0e0'
+          stroke_width: 1.5
+          stroke_dash: 0
+          show:
+            in_legend: false
+            legend_value: false
+          data_generator: return window.kioskEnergy.series(hass, 'min', start, end);
+        - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
+          name: Average
+          type: line
+          color: '#e0e0e0'
+          stroke_width: 1.5
+          stroke_dash: 6
+          show:
+            in_legend: false
+            legend_value: false
+          data_generator: return window.kioskEnergy.series(hass, 'avg', start, end);
       - type: custom:button-card
         entity: sensor.lower_deck_temperature
         show_name: false

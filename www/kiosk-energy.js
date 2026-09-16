@@ -1,0 +1,94 @@
+// Data for the Kiosk energy-usage chart (issue #16), shared by its six apexcharts-card series.
+//
+// Deployed to /config/www/ and loaded as a `lovelace: resources:` entry (/local/kiosk-energy.js),
+// so HA awaits it before the dashboard builds and `window.kioskEnergy` exists by the time any
+// series' data_generator runs. Keeping the logic here rather than inline in six generators is
+// what lets tools/tests/kiosk-energy.test.js cover it.
+//
+// Source: the nectr integration's hourly EXTERNAL statistics (nectr >= 1.2.10). Nectr publishes a
+// day's usage the following day, so the chart ends at yesterday rather than showing an empty
+// column for today.
+(function () {
+  const STATISTIC_IDS = {
+    grid: 'nectr:a_6cffe20e_grid_consumption',
+    controlled_load: 'nectr:a_6cffe20e_controlled_load',
+    export: 'nectr:a_6cffe20e_export_consumption',
+  };
+  // Earlier than the Nectr supply start (Aug 2026), so "all history" is all of it.
+  const HISTORY_START = '2026-01-01T00:00:00Z';
+  // Six series call in at once on every refresh; share one fetch between them.
+  const CACHE_MS = 5 * 60 * 1000;
+  const HALF_DAY_MS = 12 * 60 * 60 * 1000;
+
+  let cached = null;
+
+  // `result` is the recorder/statistics_during_period response: { statistic_id: [{start, change}] }.
+  // Returns [{ start, grid, controlled_load, export }] sorted by day, one entry per day that has a
+  // grid row. Metrics missing for a day count as 0.
+  function toDays(result) {
+    const byStart = new Map();
+    for (const [key, id] of Object.entries(STATISTIC_IDS)) {
+      for (const row of result[id] || []) {
+        const day = byStart.get(row.start) || { start: row.start, grid: null, controlled_load: 0, export: 0 };
+        day[key] = row.change || 0;
+        byStart.set(row.start, day);
+      }
+    }
+    return [...byStart.values()].filter((d) => d.grid !== null).sort((a, b) => a.start - b.start);
+  }
+
+  // Min, max and mean of daily usage (grid + controlled load) over complete days only. Today is
+  // excluded because a partial day would drag the minimum down.
+  function summarise(days, todayStart) {
+    const totals = days.filter((d) => d.start < todayStart).map((d) => d.grid + d.controlled_load);
+    if (!totals.length) return null;
+    return {
+      min: Math.min(...totals),
+      max: Math.max(...totals),
+      avg: totals.reduce((a, b) => a + b, 0) / totals.length,
+    };
+  }
+
+  // Points for one series between `start` and `end` (Dates from apexcharts-card).
+  // Columns sit at midday so each bar is centred in its day on the time axis. Export is negated
+  // so it draws below the axis. Reference lines are two points spanning the whole window.
+  function toSeries(days, stats, key, start, end) {
+    if (key === 'min' || key === 'max' || key === 'avg') {
+      if (!stats) return [];
+      return [[start.getTime(), stats[key]], [end.getTime(), stats[key]]];
+    }
+    const sign = key === 'export' ? -1 : 1;
+    // Window by the column's midday, not the day's midnight: apexcharts-card passes a start 1ms
+    // after midnight, which would silently drop the oldest day.
+    return days
+      .map((d) => [d.start + HALF_DAY_MS, sign * d[key]])
+      .filter(([x]) => x >= start.getTime() && x < end.getTime());
+  }
+
+  async function load(hass) {
+    const result = await hass.callWS({
+      type: 'recorder/statistics_during_period',
+      start_time: HISTORY_START,
+      statistic_ids: Object.values(STATISTIC_IDS),
+      period: 'day',
+      types: ['change'],
+      units: { energy: 'kWh' },
+    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = toDays(result);
+    return { days, stats: summarise(days, today.getTime()) };
+  }
+
+  async function series(hass, key, start, end) {
+    if (!cached || Date.now() - cached.at > CACHE_MS) {
+      cached = { at: Date.now(), data: load(hass) };
+      // A failed fetch must not be cached for five minutes.
+      cached.data.catch(() => { cached = null; });
+    }
+    const { days, stats } = await cached.data;
+    return toSeries(days, stats, key, start, end);
+  }
+
+  window.kioskEnergy = { series, _internal: { toDays, summarise, toSeries, STATISTIC_IDS } };
+})();

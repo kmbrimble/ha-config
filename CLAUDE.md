@@ -63,6 +63,7 @@ the deploy step.
 ├── tools/haws.py               # stdlib-only HA websocket client (Rule 0)
 ├── tools/deploy_lock.py        # deploy lock, and the only sanctioned copy onto live HA
 ├── tools/tests/                # node unit tests (npm run test:unit)
+├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -191,7 +192,7 @@ above), and it no longer costs a display blink — though kiosk-mode itself live
 - `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
 - `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
-- `npm run test:unit` — node unit tests in `tools/tests/` (currently the deploy lock); needs no HA
+- `npm run test:unit` — node unit tests in `tools/tests/` (the deploy lock and `www/kiosk-energy.js`); needs no HA
 
 The Playwright suite is the **only** harness that exercises HA, and it covers exactly one thing: that the two
 YAML dashboards render correctly at their display's resolution against the live HA instance.
@@ -386,6 +387,7 @@ defines/implements X" against anything on this list belongs in `UNVERIFIABLE FRO
 | `themes: !include_dir_merge_named themes` | `/config/themes/` (catppuccin) |
 | Every entity the dashboards and automations reference | integration config entries + `.storage/core.entity_registry` |
 | `/hacsfiles/*.js` in `lovelace: resources:` and `extra_module_url` | HACS-installed under `/config/www/community/` |
+| `nectr:a_6cffe20e_*` external statistics read by `www/kiosk-energy.js` | written by the nectr custom component (>= 1.2.10) into the recorder |
 | `platform: smartir`, and the `qld_fuel`, `tuya_local`, `browser_mod`, `nectr`, `sun2`, `spook` (etc.) entities | `/config/custom_components/` — see Context notes for the full list |
 | The MQTT broker, and the Emerald meter publishing `home/emerald/#` | a broker config entry plus a physical device |
 | MariaDB | a separate container |
@@ -765,6 +767,14 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `presence_simulation`, `qld_fuel`, `smartir`, `smartlife`, `spook`, `sun2`, `tuya_local`.
   Custom cards used by the dashboards come from HACS — if a card is missing at render time the
   cause is usually a missing HACS resource, not a YAML error.
+- **Kiosk energy chart (issue #16)** is `custom:apexcharts-card` fed by `www/kiosk-energy.js`,
+  which reads the nectr integration's EXTERNAL statistics `nectr:a_6cffe20e_{grid_consumption,
+  controlled_load,export_consumption}`. Those ids exist only with nectr >= 1.2.10. The
+  `sensor.power_nectr_a_6cffe20e_*` entities no longer carry history (no state class), so do not
+  point a chart at them. Deploying `www/kiosk-energy.js` means, inside `deploy_lock.py run`,
+  `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
+  `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
+  If the chart is empty, check the nectr config entry state before the card.
 - The `blueiris` custom component is scheduled for retirement as part of the Frigate migration.
   Do not build new dashboard functionality on it.
 - The Kiosk PC boots, waits for a successful ping to HA, then opens the dashboard URL. It
