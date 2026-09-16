@@ -28,9 +28,10 @@ live and deployed.
   same ids the backfill imported into. History now lives in external statistics and was
   re-backfilled (17 Aug - 15 Sep 2026).
 - **Layout:** the column's bottom-anchor selector moved from `nth-last-child(4)` to
-  `nth-last-child(5)` so the chart sits directly above Outside. Chart box `x1740,y517,w407,h354`.
+  `nth-last-child(5)` so the chart sits directly above Outside. Chart box `x1740,y588,w407,h283`
+  (cut 20% from the first cut's 354px at Kieren's request: apex `chart.height` 300 -> 229).
   Every other card's geometry is unchanged (the baseline diff only adds the new card). With a
-  person card visible, that card ends at y480, leaving a 37px gap above the chart;
+  person card visible, that card ends at y480, leaving a 108px gap above the chart;
   `scrollHeight` stays 1440.
 - **Bug found while building:** apexcharts-card passes a window start 1ms after midnight, which
   silently dropped the oldest column (13 bars instead of 14). Series are now windowed by the

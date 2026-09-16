@@ -218,7 +218,7 @@ views:
             tickAmount: 5
         apex_config:
           chart:
-            height: 300
+            height: 229
             background: transparent
             animations:
               enabled: false
