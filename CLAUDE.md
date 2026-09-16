@@ -775,8 +775,33 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
   `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
-- The `blueiris` custom component is scheduled for retirement as part of the Frigate migration.
-  Do not build new dashboard functionality on it.
+- **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
+  `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
+  the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
+  `deploy_lock.py run` with `deploy_lock.py push patches/blueiris/camera.py
+  custom_components/blueiris/camera.py`, then restart HA (a reload does not re-import the module). The patch now also stops `frame_interval` freezing at the
+  FPS Blue Iris reported when the entity was created — it reads the live FPS and never polls
+  below 10 fps (`MIN_POLL_FPS`).
+- **Dashboard cameras are WebRTC streams, not blueiris stills (2026-09-16).** The Kiosk's six
+  cameras and the WallPanel's front-gate image use `camera.bi_*` — core **Generic** camera config
+  entries whose stream source is Blue Iris's RTSP restream (`rtsp://192.168.0.20:81/<short name>`,
+  digest auth, the same `homeassistant` BI user). HA's built-in go2rtc serves them to the browser
+  as WebRTC at the cameras' native frame rate. They are created with `tools/make_generic_cam.py`
+  (BI_USER/BI_PASS in `.env`) and renamed over the websocket entity registry. They have no still
+  URL, so thumbnails come from go2rtc and take ~3 s.
+  - This depends on Blue Iris's **streaming profile 0** (`HKLM\...\Blue Iris\encoders\streaming 0`)
+    being `d2w=1` (direct-to-wire) with `gop=20`. It was `d2w=0, gop=1000` — a re-encode with a
+    keyframe every ~100 s, which go2rtc cannot start on. BI rewrites its registry on exit, so any
+    change there needs the service stopped first. Backup: `C:\BlueIris\regbackup\`.
+  - The WallPanel **cycle** card deliberately stays on `camera.cameras_wallpanel_cycle` (stills).
+    BI's group restream is a fixed 2568x960 canvas with black bars, which would pin the card at
+    393 px and break the 591/293 heights in `VARIABLE_CARD_HEIGHTS`.
+  - Blue Iris bans an IP after 5 failed logins for 60 min (`autoban`). A wrong password in a
+    probe loop would take every camera in HA down — test credentials once, not in a loop.
+  - `tools/webrtc_probe.py` negotiates WebRTC like the frontend (needs aiortc). It decodes the
+    640x360 and 720p streams but not the 1920x536 dual-lens ones (aiortc's jitter buffer), even
+    though packets arrive — use a Playwright `<video>` check (`getVideoPlaybackQuality`) for those.
+    Chromium measured 15 / 12.5 / 20 fps for the dual-lens / substream / front-gate cameras.
 - The Kiosk PC boots, waits for a successful ping to HA, then opens the dashboard URL. It
   authenticates via `trusted_networks` on `192.168.0.16` with `allow_bypass_login`. This is why
   the live Kiosk dashboard must never be left in a broken state — there is no login screen to
