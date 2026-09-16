@@ -777,8 +777,9 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   If the chart is empty, check the nectr config entry state before the card.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
-  the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite: re-copy it
-  and restart HA after any update. The patch now also stops `frame_interval` freezing at the
+  the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
+  `deploy_lock.py run` with `deploy_lock.py push patches/blueiris/camera.py
+  custom_components/blueiris/camera.py`, then restart HA (a reload does not re-import the module). The patch now also stops `frame_interval` freezing at the
   FPS Blue Iris reported when the entity was created — it reads the live FPS and never polls
   below 10 fps (`MIN_POLL_FPS`).
 - **Dashboard cameras are WebRTC streams, not blueiris stills (2026-09-16).** The Kiosk's six
