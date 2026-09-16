@@ -688,14 +688,14 @@ views:
         style: ":host { \n  width: 1273px !important; \n  flex: 0 0 1273px !important; \n  margin: 0 !important; \n  height: 100vh !important; \n  background: black !important;\n  --vertical-stack-card-gap: 0px;\n}\n"
       cards:
       - type: picture-entity
-        entity: camera.cameras_subfront
+        entity: camera.bi_subfront
         camera_view: live
         show_name: false
         show_state: false
         card_mod:
           style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
       - type: picture-entity
-        entity: camera.cameras_subsideyard
+        entity: camera.bi_subsideyard
         camera_view: live
         show_name: false
         show_state: false
@@ -710,14 +710,14 @@ views:
             }
         cards:
         - type: picture-entity
-          entity: camera.cameras_subbottomyard
+          entity: camera.bi_subbottomyard
           camera_view: live
           show_name: false
           show_state: false
           card_mod:
             style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
         - type: picture-entity
-          entity: camera.cameras_subtopyard
+          entity: camera.bi_subtopyard
           camera_view: live
           show_name: false
           show_state: false
@@ -732,14 +732,14 @@ views:
             }
         cards:
         - type: picture-entity
-          entity: camera.cameras_subbackgate
+          entity: camera.bi_subbackgate
           camera_view: live
           show_name: false
           show_state: false
           card_mod:
             style: "ha-card { \n  height: 25vh !important; \n  border-radius: 0px !important; \n  border: none !important; \n  margin: 0px !important; \n  box-shadow: none !important; \n  background: black !important;\n}\n"
         - type: picture-entity
-          entity: camera.cameras_front_gate
+          entity: camera.bi_frontgate
           camera_view: live
           show_name: false
           show_state: false

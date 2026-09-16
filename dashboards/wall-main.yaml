@@ -265,7 +265,7 @@ views:
         fit_mode: cover
         entity: camera.front_gate_live
         image: https://demo.home-assistant.io/stub_config/bedroom.png
-        camera_image: camera.cameras_front_gate
+        camera_image: camera.bi_frontgate
         tap_action:
           action: none
       - type: picture-entity
