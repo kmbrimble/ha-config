@@ -1,0 +1,89 @@
+# Universal Studios Hollywood — October 2026 park hours watch (one-shot)
+#
+# Every day at 07:00 (HA local time, Australia/Brisbane) this asks Universal's own hours API
+# — the same endpoint the calendar page at universalstudioshollywood.com uses — for
+# USH (venue 13825) through 31 Oct 2026. The first time any October dates come back it
+# pushes the published October hours to Kieren's iPhone 17 and T's Z Fold7, then turns
+# itself off. Delete this file once the trip is done.
+#
+# Notes:
+# - The API key/token are the public values embedded in the site's main-*.js bundle
+#   (`mobileServicesApi`). If Universal rotates them the call starts returning non-200 and a
+#   persistent notification appears in HA instead of a push.
+# - OpenTimeString/CloseTimeString carry a wrong -04:00 offset; the Unix fields are correct,
+#   so times are derived from those. All of October 2026 is PDT (UTC-7, DST ends 1 Nov),
+#   hence the fixed 25200 s shift.
+# - Lives in a package (not automations.yaml) because rest_command must be YAML anyway and
+#   the two only make sense together. Adding rest_command as a NEW domain needs a full HA
+#   restart the first time; reloads won't register it.
+
+rest_command:
+  ush_venue_hours:
+    url: "https://services.universalorlando.com/api/Venues/13825/Hours?endDate=10/31/2026"
+    method: GET
+    headers:
+      X-UNIWebService-ApiKey: WebServicePortal
+      X-UNIWebService-Token: 020B07FD-C5CC-412F-BBCC-F94B16BE7A3F
+      User-Agent: Mozilla/5.0
+    timeout: 30
+
+automation:
+  - id: ush_october_hours_watch
+    alias: "Travel - USH October hours watch"
+    description: "One-shot: push USH October 2026 park hours to Kieren's iPhone 17 and T's Z Fold7 when first published, then turn off."
+    mode: single
+    triggers:
+      - trigger: time
+        at: "07:00:00"
+    actions:
+      - action: rest_command.ush_venue_hours
+        response_variable: ush
+        continue_on_error: true
+      - if:
+          - condition: template
+            value_template: "{{ ush is not defined or ush.status != 200 or ush.content is string }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              notification_id: ush_october_hours_watch_error
+              title: "USH hours watch: API call failed"
+              message: >-
+                Universal's hours API returned
+                {{ ush.status if ush is defined else 'no response' }} at {{ now().strftime('%-d %b %H:%M') }}.
+                The header key/token may have been rotated — see packages/ush_october_hours.yaml.
+          - stop: "API call failed"
+      - variables:
+          october: "{{ ush.content | selectattr('Date', 'match', '2026-10') | list }}"
+      - condition: template
+        value_template: "{{ october | count > 0 }}"
+      - variables:
+          last_day: "{{ strptime(october | map(attribute='Date') | max, '%Y-%m-%d').strftime('%-d %b') }}"
+          lines: >-
+            {% set ns = namespace(out=[]) %}
+            {% for d in october %}
+              {% set o = ((d.OpenTimeUnix | int) - 25200) | timestamp_custom('%-I:%M%p', false) | lower | replace(':00', '') %}
+              {% set c = ((d.CloseTimeUnix | int) - 25200) | timestamp_custom('%-I:%M%p', false) | lower | replace(':00', '') %}
+              {% set ns.out = ns.out + [strptime(d.Date, '%Y-%m-%d').strftime('%a %-d') ~ ': ' ~ o ~ '–' ~ c] %}
+            {% endfor %}
+            {{ ns.out | join('\n') }}
+          message: "Published through {{ last_day }} (Pacific time):\n{{ lines }}"
+      - action: notify.mobile_app_kierens_iphone_17
+        continue_on_error: true
+        data:
+          title: "🎢 USH October hours are out"
+          message: "{{ message }}"
+          data:
+            url: "https://www.universalstudioshollywood.com/web/en/us/calendar-and-hours"
+      - action: notify.mobile_app_t_z_fold7
+        continue_on_error: true
+        data:
+          title: "🎢 USH October hours are out"
+          message: "{{ message }}"
+          data:
+            clickAction: "https://www.universalstudioshollywood.com/web/en/us/calendar-and-hours"
+      - action: persistent_notification.dismiss
+        data:
+          notification_id: ush_october_hours_watch_error
+      - action: automation.turn_off
+        target:
+          entity_id: "{{ this.entity_id }}"
