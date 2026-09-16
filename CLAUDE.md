@@ -671,8 +671,12 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   point a chart at them. Deploying `www/kiosk-energy.js` means copying it to `/ha-config/www/`
   and bumping its `?v=` in `lovelace: resources:`, then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
-- The `blueiris` custom component is scheduled for retirement as part of the Frigate migration.
-  Do not build new dashboard functionality on it.
+- **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
+  `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
+  the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite: re-copy it
+  and restart HA after any update. The patch now also stops `frame_interval` freezing at the
+  FPS Blue Iris reported when the entity was created — it reads the live FPS and never polls
+  below 10 fps (`MIN_POLL_FPS`).
 - **Dashboard cameras are WebRTC streams, not blueiris stills (2026-09-16).** The Kiosk's six
   cameras and the WallPanel's front-gate image use `camera.bi_*` — core **Generic** camera config
   entries whose stream source is Blue Iris's RTSP restream (`rtsp://192.168.0.20:81/<short name>`,

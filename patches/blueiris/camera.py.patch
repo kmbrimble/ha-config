@@ -1,5 +1,5 @@
---- /tmp/camera_orig.py	2026-09-05 11:29:15.893649001 +1000
-+++ /tmp/camera_new.py	2026-09-05 11:29:37.587005389 +1000
+--- a/custom_components/blueiris/camera.py
++++ b/custom_components/blueiris/camera.py
 @@ -6,7 +6,9 @@
  from abc import ABC
  import asyncio
@@ -10,7 +10,7 @@
  
  import aiohttp
  import voluptuous as vol
-@@ -44,6 +46,41 @@
+@@ -44,6 +46,49 @@
  
  CURRENT_DOMAIN = DOMAIN_CAMERA
  
@@ -18,6 +18,14 @@
 +# fetch. Without it, an unreachable Blue Iris would have every camera asking for a
 +# new session on every frame.
 +RELOGIN_COOLDOWN = 30
++
++# Floor for the MJPEG-from-stills polling rate. Blue Iris reports each camera's FPS, but a
++# camera that is reconnecting (after a BI restart, or when HA reloads the entry) reports 0-1 fps
++# for a moment. entity_manager clamps that to 1, and HA reads frame_interval once, when a
++# stream starts - so a stream that starts at that moment polls at 1 fps until the browser
++# reloads. Polling faster than the source costs only a fetch: HA skips frames that have not
++# changed. So never poll slower than this.
++MIN_POLL_FPS = 10
 +
 +
 +def _with_current_session(url: Optional[str], session_id: Optional[str]) -> Optional[str]:
@@ -52,7 +60,7 @@
  
  async def async_setup_entry(hass, config_entry, async_add_devices):
      """Set up the BlueIris Camera."""
-@@ -115,6 +152,7 @@
+@@ -115,6 +160,7 @@
  
          self._last_url = None
          self._last_image = None
@@ -60,7 +68,33 @@
  
      def _immediate_update(self, previous_state: bool):
          if previous_state != self.entity.state:
-@@ -146,6 +184,42 @@
+@@ -135,8 +181,23 @@
+ 
+     @property
+     def frame_interval(self):
+-        """Return the interval between frames of the mjpeg stream."""
+-        return self._frame_interval
++        """Return the interval between frames of the mjpeg stream.
++
++        Upstream fixes this at entity creation from whatever FPS Blue Iris reported then, and
++        never re-reads it. Read the FPS from the entity data instead - the entity manager
++        rebuilds that on every poll - and never go below MIN_POLL_FPS.
++        """
++        fps = None
++        details = getattr(self.entity, "details", None) or {}
++        try:
++            fps = float(details.get(CONF_FRAMERATE))
++        except (TypeError, ValueError):
++            fps = None
++
++        if not fps or fps <= 0:
++            fps = 1 / self._frame_interval
++
++        return 1 / max(fps, MIN_POLL_FPS)
+ 
+     def camera_image(
+         self, width: Optional[int] = None, height: Optional[int] = None
+@@ -146,6 +207,42 @@
              self.async_camera_image(), self.hass.loop
          ).result()
  
@@ -103,7 +137,7 @@
      async def async_camera_image(
          self, width: Optional[int] = None, height: Optional[int] = None
      ) -> Optional[bytes]:
-@@ -156,28 +230,40 @@
+@@ -156,28 +253,40 @@
              _LOGGER.error("Error parsing template %s: %s", self._still_image_url, err)
              return self._last_image
  

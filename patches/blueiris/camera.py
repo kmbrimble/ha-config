@@ -51,6 +51,14 @@ CURRENT_DOMAIN = DOMAIN_CAMERA
 # new session on every frame.
 RELOGIN_COOLDOWN = 30
 
+# Floor for the MJPEG-from-stills polling rate. Blue Iris reports each camera's FPS, but a
+# camera that is reconnecting (after a BI restart, or when HA reloads the entry) reports 0-1 fps
+# for a moment. entity_manager clamps that to 1, and HA reads frame_interval once, when a
+# stream starts - so a stream that starts at that moment polls at 1 fps until the browser
+# reloads. Polling faster than the source costs only a fetch: HA skips frames that have not
+# changed. So never poll slower than this.
+MIN_POLL_FPS = 10
+
 
 def _with_current_session(url: Optional[str], session_id: Optional[str]) -> Optional[str]:
     """Return url with its `session` query parameter set to the current session ID.
@@ -173,8 +181,23 @@ class BlueIrisCamera(Camera, BlueIrisEntity, ABC):
 
     @property
     def frame_interval(self):
-        """Return the interval between frames of the mjpeg stream."""
-        return self._frame_interval
+        """Return the interval between frames of the mjpeg stream.
+
+        Upstream fixes this at entity creation from whatever FPS Blue Iris reported then, and
+        never re-reads it. Read the FPS from the entity data instead - the entity manager
+        rebuilds that on every poll - and never go below MIN_POLL_FPS.
+        """
+        fps = None
+        details = getattr(self.entity, "details", None) or {}
+        try:
+            fps = float(details.get(CONF_FRAMERATE))
+        except (TypeError, ValueError):
+            fps = None
+
+        if not fps or fps <= 0:
+            fps = 1 / self._frame_interval
+
+        return 1 / max(fps, MIN_POLL_FPS)
 
     def camera_image(
         self, width: Optional[int] = None, height: Optional[int] = None
