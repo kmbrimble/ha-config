@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Deploy lock
+Two sessions in two clean git worktrees could still write to the live HA at the same time. Every
+write to the live config now happens inside `tools/deploy_lock.py run`, and every copy goes
+through `tools/deploy_lock.py push`; CLAUDE.md's Deploy and verify section requires both.
+
+- The lock is `/projects/.locks/ha-config.deploy.lock/` (outside every worktree and off the
+  `/ha-config` bind). It is taken by renaming a staged directory into place, which was race-tested
+  on shfs, and it records the pid, its start time, boot_id, container, holder and the section's
+  process group. Staleness is judged by liveness, with a 1-hour backstop only where liveness
+  cannot be checked. Breaks are loud and logged to `/projects/.locks/ha-config.deploy.log`.
+- `push` covers both routes (direct CIFS, and the unRAID SSH fallback for a stale bind), refuses
+  to run without the lock, refuses `.storage/`, `secrets.yaml`, databases and logs, and writes to
+  a temp file and renames it into place, so a reload can no longer read a half-copied YAML.
+  Rename-over was verified on the live share and through the unRAID host with a throwaway dotfile.
+- New `npm run test:unit` (node's test runner): 35 tests, including genuinely concurrent
+  acquisition and breaking. Written first and confirmed failing against a no-op stub.
+- Out of scope, documented as such: edits made in the HA UI, HA rewriting `automations.yaml`, and
+  restarting this container to fix a stale bind.
+
 ### Kiosk dashboard: daily energy chart (issue #16)
 Added to the middle column between the person cards and the Outside card, promoted candidate ->
 live and deployed.
@@ -21,7 +40,8 @@ live and deployed.
   (`/local/kiosk-energy.js`). It reads the nectr integration's external statistics
   (`nectr:a_6cffe20e_*`) with one shared, 5-minute-cached websocket call, and all six series'
   `data_generator`s delegate to it. It has unit tests: `npm run test:unit`
-  (`tools/tests/kiosk-energy.test.js`).
+  (`tools/tests/kiosk-energy.test.js`). The first deploys predate the deploy lock (plain `cp`); later ones
+  go through `tools/deploy_lock.py`.
 - **Prerequisite fixed upstream:** nectr-energy v1.2.10 (kmbrimble/nectr-energy#47). The
   integration had been in setup_retry: Nectr dropped two GraphQL fields and the query failed with
   a 400. Its hourly history was also corrupted, because the recorder compiled statistics for the
