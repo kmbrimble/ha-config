@@ -66,14 +66,6 @@ lovelace:
       type: module
     - url: /hacsfiles/weather-radar-card/weather-radar-card.js?v=1
       type: module
-    # Re-added 2026-09-16 for the Kiosk energy-usage chart (issue #16). It is the only installed
-    # card that can stack columns, draw a negative export series and overlay reference lines.
-    - url: /hacsfiles/apexcharts-card/apexcharts-card.js?v=1
-      type: module
-    # Data source for that chart's series, from www/kiosk-energy.js. Must be a resource (awaited)
-    # so window.kioskEnergy exists before the chart's data generators run.
-    - url: /local/kiosk-energy.js?v=2
-      type: module
   dashboards:
     kiosk-main:
       mode: yaml
