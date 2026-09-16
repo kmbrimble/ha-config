@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Deploy lock
+Two sessions in two clean git worktrees could still write to the live HA at the same time. Every
+write to the live config now happens inside `tools/deploy_lock.py run`, and every copy goes
+through `tools/deploy_lock.py push`; CLAUDE.md's Deploy and verify section requires both.
+
+- The lock is `/projects/.locks/ha-config.deploy.lock/` (outside every worktree and off the
+  `/ha-config` bind). It is taken by renaming a staged directory into place, which was race-tested
+  on shfs, and it records the pid, its start time, boot_id, container, holder and the section's
+  process group. Staleness is judged by liveness, with a 1-hour backstop only where liveness
+  cannot be checked. Breaks are loud and logged to `/projects/.locks/ha-config.deploy.log`.
+- `push` covers both routes (direct CIFS, and the unRAID SSH fallback for a stale bind), refuses
+  to run without the lock, refuses `.storage/`, `secrets.yaml`, databases and logs, and writes to
+  a temp file and renames it into place, so a reload can no longer read a half-copied YAML.
+  Rename-over was verified on the live share and through the unRAID host with a throwaway dotfile.
+- New `npm run test:unit` (node's test runner): 35 tests, including genuinely concurrent
+  acquisition and breaking. Written first and confirmed failing against a no-op stub.
+- Out of scope, documented as such: edits made in the HA UI, HA rewriting `automations.yaml`, and
+  restarting this container to fix a stale bind.
+
 ### Kiosk dashboard
 Promoted from `dashboards/kiosk-candidate.yaml` to `dashboards/kiosk-main.yaml` and deployed live
 (issue #9's card-height reduction shipped in the same promotion as the fuel-chart y-axis change

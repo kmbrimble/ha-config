@@ -61,6 +61,8 @@ the deploy step.
 ├── scenes.yaml
 ├── packages/                   # fuel_price_trends.yaml, wallpanel_motion_alert.yaml
 ├── tools/haws.py               # stdlib-only HA websocket client (Rule 0)
+├── tools/deploy_lock.py        # deploy lock, and the only sanctioned copy onto live HA
+├── tools/tests/                # node unit tests (npm run test:unit)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -96,11 +98,12 @@ The loop for any dashboard change:
 
 1. Edit `dashboards/<name>.candidate.yaml` in the repo. **Never edit the live `.yaml` directly
    during development.**
-2. Copy the candidate to the mount: `cp dashboards/<name>.candidate.yaml /ha-config/dashboards/`
+2. Push the candidate to the mount **inside the deploy lock** (see Deploy and verify):
+   `python3 tools/deploy_lock.py push dashboards/<name>-candidate.yaml dashboards/<name>-candidate.yaml`
 3. Trigger a reload so HA picks up the change (see "Reloading" below).
 4. Run the Playwright tests against the **candidate** dashboard URL.
-5. Only when green: copy candidate over live in the repo, commit, then copy the live file to the
-   mount and reload.
+5. Only when green: copy candidate over live in the repo, commit, then push the live file to the
+   mount and reload — steps 2, 3 and this one each inside the deploy lock.
 
 At no point does a failing change reach the Kiosk or WallPanel display.
 
@@ -120,8 +123,8 @@ than `kiosk`/`wall`. If a future change needs a new dashboard key, it must be hy
 
 **RESOLVED — it depends on which file changed:**
 
-- **Editing a dashboard YAML** (`dashboards/*.yaml`) — **no restart needed.** Copy the file to the
-  mount and HA serves the new config immediately; confirmed 2026-08-22 by editing
+- **Editing a dashboard YAML** (`dashboards/*.yaml`) — **no restart needed.** Push the file to the
+  mount (under the deploy lock) and HA serves the new config immediately; confirmed 2026-08-22 by editing
   `kiosk-candidate.yaml` and reading it straight back over the websocket
   (`{"type":"lovelace/config","url_path":"kiosk-candidate"}`). A browser refresh picks it up.
   This is the common case in the candidate workflow, so most dashboard iteration needs no restart.
@@ -188,8 +191,9 @@ above), and it no longer costs a display blink — though kiosk-mode itself live
 - `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
 - `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
+- `npm run test:unit` — node unit tests in `tools/tests/` (currently the deploy lock); needs no HA
 
-This is the **only** automated harness in the repo, and it covers exactly one thing: that the two
+The Playwright suite is the **only** harness that exercises HA, and it covers exactly one thing: that the two
 YAML dashboards render correctly at their display's resolution against the live HA instance.
 Nothing else here has a test — `configuration.yaml`, `automations.yaml`, `scripts.yaml` and
 `packages/` are covered only by HA's config check, which validates schema and not behaviour. What
@@ -400,7 +404,8 @@ websocket) before reporting a broken reference.
 
 ### Test reality
 
-`npm run test:e2e` is the only automated harness. It covers the two YAML dashboards, as rendered,
+`npm run test:e2e` is the only automated harness that exercises HA (`npm run test:unit` covers
+repo tooling only). It covers the two YAML dashboards, as rendered,
 and nothing else. `configuration.yaml`, `automations.yaml` (28 automations), `scripts.yaml` (17
 scripts) and `packages/` have **no test of any kind** — HA's config check validates schema, not
 behaviour. Score test-coverage gap **3** for a change to any of those.
@@ -439,7 +444,8 @@ conditional cards themselves are no longer pinned by the baseline.
 1. **Direct edits to live HA config files are allowed, gated by backup-validate-retry-restore.**
    `configuration.yaml`, `scripts.yaml`, `automations.yaml`, and other live config files on the
    mount may be edited and deployed directly — `secrets.yaml`, `.storage/`, and any database or
-   log file are still off limits (see constraints 2–4). Before touching any such file:
+   log file are still off limits (see constraints 2–4). Every write to a live file — restores
+   included — happens inside the deploy lock (see Deploy and verify). Before touching any such file:
    1. **Backup first.** Copy the current version of every file about to be touched to
       `/projects/ha-config/backups/<filename>-YYYYMMDD-HHMMSS.bak` (same convention as the
       dashboard backups below) before making any edit.
@@ -539,7 +545,8 @@ Before the first write of a session, copy the current live dashboard file to
 primary rollback mechanism; this is a belt-and-braces copy of what was actually live at the time,
 which may differ from the repo if it was edited elsewhere.
 
-To revert: `git checkout <commit> -- dashboards/<name>.yaml`, then copy to the mount and reload.
+To revert: `git checkout <commit> -- dashboards/<name>.yaml`, then push it to the mount and reload,
+inside the deploy lock.
 
 The same `/projects/ha-config/backups/` directory is the backup location for direct edits to
 `configuration.yaml`, `scripts.yaml`, `automations.yaml`, and other live config files under the
@@ -548,6 +555,105 @@ backup-validate-retry-restore process in constraint #1 — see that section for 
 ## Deploy and verify
 
 There is **no CI build and no container to update**. Do not run `gh run watch` in this project.
+
+### The deploy lock — required for every write to the live config
+
+Several sessions can be live in this repo at once, each in its own git worktree (see
+`/projects/claude-code-unraid/OPERATIONS.md` §5a). A worktree isolates the working copy, **not**
+the deploy target: two sessions in two clean worktrees still write to the same running HA, and a
+reload or config check can read a file another session is halfway through copying. So:
+
+**Every write to the live config happens inside `tools/deploy_lock.py run`, and every copy goes
+through `tools/deploy_lock.py push`.** No bare `cp … /ha-config/…`, and no hand-rolled
+`ssh … 'cat > /mnt/remotes/…'`. This applies to the candidate loop, to promotions, to backups
+being restored, and to `www/` resources, because a dashboard YAML goes live the moment it lands.
+
+```bash
+cd /projects/.worktrees/ha-config-<slug>
+set -a; . /projects/ha-config/.env; set +a
+python3 tools/deploy_lock.py run --holder "cowork: kiosk fuel cards (ha-config-<slug>)" -- bash -c '
+  set -e
+  python3 tools/deploy_lock.py push packages/foo.yaml packages/foo.yaml
+  curl -sf -X POST -H "Authorization: Bearer $HA_TOKEN" \
+    http://192.168.0.21:8123/api/config/core/check_config | tee /dev/stderr | grep -q "\"valid\""
+  # ...reload, then read back the states you touched and check system_log/list (constraint #1.6).
+  # On a failed check: push the backup back, re-check, and only then let the section end.
+'
+```
+
+- **One critical section = one attempt**: push → config check → reload (or restore and re-check)
+  → verify. Hold it for the deploy only, never for the whole session. Under constraint #1's
+  retry loop each attempt is its own section; that is safe because every attempt ends with the
+  live config either valid or restored.
+- **`push SRC DEST`**: `DEST` is relative to HA's `/config`. It picks the route itself: straight
+  onto `/ha-config` when that is a live `cifs` mount, otherwise the unRAID SSH route (the stale
+  bind below); `--backend local|ssh` forces one. It writes a temp file beside the target and
+  renames it into place, so HA never reads a half-written file, then compares MD5s. It **refuses**
+  (exit 77) without the lock token that `run` exports, with a stale lock, and for `.storage/`,
+  `secrets.yaml`, `.ha_run.lock`, databases and logs.
+- **Busy lock**: `run` waits up to `--wait` seconds (default 300) and prints who holds it, then
+  exits 75. Don't break a lock because you are in a hurry — look at it first with
+  `python3 tools/deploy_lock.py status`.
+- **The lock** is the directory `/projects/.locks/ha-config.deploy.lock/` with an `owner.json`:
+  token, pid and its `/proc` start time, boot_id, hostname (the container), the `--holder` text,
+  cwd, start time, and the process group of the running section. Every acquire, release and break
+  is appended to `/projects/.locks/ha-config.deploy.log`.
+- **Staleness is judged by liveness, not age.** The lock is held while the `run` process is alive,
+  or — if it was SIGKILLed, e.g. at the connector's timeout — while anything in the section's
+  process group is still running. When both are gone it is stale, and the next `run` breaks it
+  with a `!!! STALE DEPLOY LOCK BROKEN` banner and a log line. A 1-hour backstop applies only where
+  liveness cannot be checked (a lock from another container or host, or an unreadable
+  `owner.json`) or to an orphaned section that runs past it. A live `run` stops its own section
+  after `--max-seconds` (default 1200, exit 124), so a live holder is never broken.
+- **Breaking by hand**: `deploy_lock.py break --token <token from status> --reason "..."`. It
+  refuses a holder it can see is alive, and logs loudly. After a container recreate the old
+  lock's container id no longer matches, so it is treated as foreign until the backstop; if you
+  are certain nothing is deploying, break it by hand.
+
+**Why it is built this way** (verified on this filesystem 2026-09-17, don't re-litigate without
+re-testing):
+
+- It lives on `/projects`, **outside every worktree** — a lockfile inside a worktree is invisible
+  to every other worktree. It is **not on `/ha-config`**, because that bind can go stale (below),
+  which would hide the lock in exactly the situation the SSH route is used.
+- `/projects` is shfs (FUSE), so nothing was assumed. Taking the lock = writing `owner.json`
+  into a private staging directory, then `rename()`ing that directory onto the lock path.
+  Renaming a directory onto a non-empty one fails with `ENOTEMPTY`, so exactly one racer wins
+  (200 rounds × 16 racers, one winner every round) and nobody ever sees a lock without its
+  `owner.json`. `mkdir` and `O_EXCL` also raced correctly; `flock` is not used.
+- Breaking renames the lock aside and checks it is the one that was judged stale. A file rename
+  would silently replace a newer lock, but a directory rename cannot. Breaking and releasing also
+  take a short-lived second lock (`…lock.breaking`), so two breakers cannot take turns removing
+  each other's fresh locks.
+- The pid is paired with its `/proc` start time because PIDs are reused, most obviously after a
+  container restart.
+- The section's process group is recorded **before** the section starts (the child waits on a
+  pipe until it is), because the connector SIGKILLs at its timeout and SIGKILL runs no cleanup —
+  a `trap` alone would leave the lock held forever or, worse, released while an orphaned `cp` is
+  still writing.
+
+Tests: `npm run test:unit` (`tools/tests/deploy-lock.test.js`) covers acquisition, genuinely
+concurrent contention (eight racers, exactly one winner; six waiters whose sections never
+overlap), stale detection (dead pid, reused pid, previous boot, foreign host before/after the
+backstop, unreadable owner), racing breakers, release on success, failure, SIGTERM, overrun and
+straggler processes, SIGKILL leaving a lock that stays held until its section ends, and `push`
+over both routes (SSH via a stub `ssh`) — all against fixture paths, never live HA. The real
+lock and both push routes were exercised once against live HA on 2026-09-17 with a throwaway
+dotfile (`/config/.deploy-rename-probe`, removed afterwards), which also confirmed that
+rename-over works on this CIFS mount and through the unRAID host.
+
+**What the lock cannot see — out of scope, not solved:**
+
+- **A person editing through the HA UI.** Those writes go through HA itself and never touch the
+  lock. If the user may be editing at the same time, ask.
+- **HA rewriting `automations.yaml`** (and `scripts.yaml`/`scenes.yaml`) when something is saved
+  in the UI editor. Those files stay UI-editable by design, so read the live copy immediately
+  before deploying them and diff it against the repo.
+- **Restarting this container to fix a stale bind mount.** That belongs to the Claude
+  (claude-code-unraid) Project; `push` just routes around it.
+- **Anyone who ignores the rule.** Nothing stops a bare `cp` onto `/ha-config`. A Claude Code
+  hook that blocks one would enforce it; that would live in claude-code-unraid and has not been
+  built.
 
 ### When `/ha-config` is empty — the stale bind mount
 
@@ -566,22 +672,21 @@ This is **not** the share being down, and restarting this container to fix it is
 (it is the Claude Project's territory, and it kills the session doing the work). Deploy through
 the unRAID host instead — it can see the live mount:
 
-```bash
-cat packages/<file>.yaml | ssh -i /root/.ssh/unraid_secretsman root@192.168.0.10 \
-  'cat > /mnt/remotes/192.168.0.21_config/packages/<file>.yaml'
-# then confirm both ends agree
-ssh -i /root/.ssh/unraid_secretsman root@192.168.0.10 'md5sum /mnt/remotes/192.168.0.21_config/packages/<file>.yaml'
-md5sum packages/<file>.yaml
-```
+`tools/deploy_lock.py push` takes this route by itself whenever `/ha-config` is not a `cifs`
+mount (force it with `--backend ssh`): it streams the file through
+`ssh -i /root/.ssh/unraid_secretsman root@192.168.0.10` into
+`/mnt/remotes/192.168.0.21_config/`, renames it into place, and compares MD5s at both ends. Do
+not hand-roll the old `ssh … 'cat > …'` form: it bypasses the deploy lock.
 
-Verified 2026-09-12 deploying `packages/ups_runtime.yaml` this way. Everything downstream is
+Verified 2026-09-12 deploying `packages/ups_runtime.yaml` this way by hand, and through `push` on
+2026-09-17. Everything downstream is
 unchanged: config-check over REST, then the reload. Note this is SSH to **unRAID**, not to the HA
 host — there is still no shell on HA OS from here, so `ha core check` remains unreachable.
 
 1. Commit and push to `main` (GitHub repo is private).
-2. Copy the verified live file to the mount:
-   `cp dashboards/<name>.yaml /ha-config/dashboards/`
-3. Trigger the reload.
+2. Inside `tools/deploy_lock.py run`, push the verified live file:
+   `python3 tools/deploy_lock.py push dashboards/<name>.yaml dashboards/<name>.yaml`
+3. Trigger the reload and verify, in the same locked section.
 4. **For the Kiosk dashboard specifically**, also refresh the physical display via the
    `browser_mod` HACS integration (installed 2026-08-29 for this purpose):
    `curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" -d '{"browser_id": "kiosk"}' http://192.168.0.21:8123/api/services/browser_mod/refresh`
