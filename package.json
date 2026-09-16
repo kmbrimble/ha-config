@@ -8,7 +8,7 @@
     "test:e2e:kiosk": "playwright test --project=kiosk",
     "test:e2e:wall": "playwright test --project=wall",
     "test:e2e:baseline": "UPDATE_BASELINE=1 playwright test",
-    "test:unit": "node --test tools/tests/kiosk-energy.test.js"
+    "test:unit": "node --test --test-concurrency=1 'tools/tests/*.test.js'"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1"
