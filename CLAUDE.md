@@ -508,9 +508,11 @@ This matters because the Overview dashboard is the auto-generated `original-stat
 groups entities by device, and anything without a device lands in a catch-all Sensors card. So an
 entity that must appear alongside its device has to be a config-entry helper.
 
-`sensor.server_rack_ups_runtime` and `sensor.garage_ups_runtime` are therefore **storage-managed
-helpers, not YAML** — the only two entities of this kind. They are listed here because nothing in
-the repo would otherwise show they exist. Their definition:
+`sensor.server_rack_ups_runtime`, `sensor.garage_ups_runtime` and `sensor.server_rack_power` are
+therefore **storage-managed helpers, not YAML** — the only three entities of this kind. They are
+listed here because nothing in the repo would otherwise show they exist.
+
+The two runtime mirrors:
 
 | | |
 |---|---|
@@ -519,7 +521,37 @@ the repo would otherwise show they exist. Their definition:
 | availability | `{{ states('sensor.<ups>_battery_runtime') \| is_number }}` |
 | device | the matching NUT device |
 
-If you need to change them, edit the config entry's options, not a YAML file.
+`sensor.server_rack_power`, added 17 Sep 2026, exists for a **different** reason — not a missing
+`state_class`, but a category. NUT gives `sensor.server_rack_real_power` and
+`sensor.server_rack_apparent_power` `entity_category: diagnostic`, and HA's entity-category rules
+say categorised entities *"do not show up on the automatically generated Lovelace Dashboards"* and
+are *"shown on a separate card on the device configuration page"*. The Overview here **is** that
+auto dashboard, so the CP1600's wattage was recording perfectly and was simply invisible on it
+(`sensor.server_rack_load` has no category, which is why the load % showed and the watts did not).
+`entity_category` cannot be cleared from the registry — HA 2026.9.1 rejects `null` with
+`invalid_format: not a valid option at 'entity_category'. Got None` — so an uncategorised mirror is
+the only route.
+
+| | |
+|---|---|
+| state | `{% set s = states('sensor.server_rack_real_power') %}{{ s \| float \| round(0) if s \| is_number else none }}` |
+| unit / class | `W`, `power`, `state_class: measurement` |
+| availability | `{{ states('sensor.server_rack_real_power') \| is_number }}` |
+| device | Server Rack (CP1600), `6be6c0bb8307c02dc738d1ba6484033a` |
+
+Accept that this duplicates the statistics series: `sensor.server_rack_real_power` and
+`sensor.server_rack_power` both record, and the mirror is the one that displays. The same mirror
+would work for `_apparent_power` (VA) and has deliberately **not** been made — one number on the
+dashboard is the point.
+
+There is no equivalent for the garage UPS, and there cannot be: the UT850EG exposes no wattage at
+all. `upsc garage@192.168.0.15` yields only `ups.load: 0` and `ups.realpower.nominal: 425` — the
+CyberPower HID **0.8** subdriver on that unit lacks `ups.power`/`ups.realpower` where the CP1600's
+**0.85** has them. Deriving watts from `load % × 425` is worthless because `ups.load` reads a flat
+`0` at the real ~15 W draw; `sensor.garage_load`'s statistics are consecutive rows of `0.0`. A
+smart plug on its input is the only route to that figure.
+
+If you need to change any of them, edit the config entry's options, not a YAML file.
 
 ### Swapping one entity for another when statistics are involved — order matters
 
