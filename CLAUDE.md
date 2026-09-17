@@ -651,6 +651,22 @@ rename-over works on this CIFS mount and through the unRAID host.
 - **HA rewriting `automations.yaml`** (and `scripts.yaml`/`scenes.yaml`) when something is saved
   in the UI editor. Those files stay UI-editable by design, so read the live copy immediately
   before deploying them and diff it against the repo.
+- **`POST /api/config/automation/config/<id>`** — convenient, and it **bypasses the deploy lock
+  entirely**: it writes straight onto the live `automations.yaml` with the repo none the wiser.
+  It also **re-serialises the whole file**, so every long description and template string comes
+  back re-wrapped and the text diff looks enormous. Done once on 17 Sep 2026 (the EcoFlow BLE
+  trigger swap) before this was understood; the repo was then resynced from the live copy. Two
+  rules from it: edit `automations.yaml` in the repo and deploy it under the lock like anything
+  else, and if the API has been used anyway, prove the reflow was inert by diffing the **parsed**
+  YAML, not the text —
+
+  ```python
+  import yaml
+  old = {a['id']: a for a in yaml.safe_load(open('automations.yaml'))}
+  new = {a['id']: a for a in yaml.safe_load(open('/tmp/live_automations.yaml'))}
+  print([k for k in old & new.keys() if old[k] != new[k]])   # expect only what you changed
+  ```
+
 - **Restarting this container to fix a stale bind mount.** That belongs to the Claude
   (claude-code-unraid) Project; `push` just routes around it.
 - **Anyone who ignores the rule.** Nothing stops a bare `cp` onto `/ha-config`. A Claude Code

@@ -263,11 +263,11 @@
   mode: single
 - id: '1751182976776'
   alias: Front Gate IR On at night
-  description: 'Re-arms the DoorBird IR every 2 min (it only stays on ~3 min). 2026-09-11:
-    once the IR dropped out (torch on the lens), a bare light-on press was accepted
-    but ignored, while a live-image request followed by light-on restored it (twice).
-    So each run now requests a live image first. Untested fallback if it still sticks:
-    send both requests with curl via shell_command.'
+  description: 'Re-arms the DoorBird IR every 2 min (it only stays on ~3 min). 2026-09-11: once
+    the IR dropped out (torch on the lens), a bare light-on press was accepted but ignored,
+    while a live-image request followed by light-on restored it (twice). So each run now
+    requests a live image first. Untested fallback if it still sticks: send both requests
+    with curl via shell_command.'
   triggers:
   - trigger: time_pattern
     minutes: /2
@@ -693,8 +693,7 @@
     metadata: {}
     data:
       title: Door lock battery low
-      message: Internal Door lock battery is below 20% ({{ states("sensor.internal_door_battery")
-        }}%). Recharge soon.
+      message: 'Internal Door lock battery is below 20% ({{ states("sensor.internal_door_battery") }}%). Recharge soon.'
   mode: single
 - id: '1787989686000'
   alias: Blind Battery Low
@@ -717,14 +716,11 @@
     metadata: {}
     data:
       title: Blind battery low
-      message: '{{ trigger.to_state.attributes.friendly_name }} is below 30% ({{ trigger.to_state.state
-        }}%). Recharge soon.'
+      message: '{{ trigger.to_state.attributes.friendly_name }} is below 30% ({{ trigger.to_state.state }}%). Recharge soon.'
   mode: queued
 - id: arrive_home_front_footpath_lights
   alias: Arrive Home - Front and Footpath Lights
-  description: On arrival after dark, front + footpath lights to 100% for 15 min,
-    then off (twice, Tuya misses). Footpath left alone if the daily automation already
-    had it on.
+  description: On arrival after dark, front + footpath lights to 100% for 15 min, then off (twice, Tuya misses). Footpath left alone if the daily automation already had it on.
   triggers:
   - trigger: state
     entity_id:
@@ -774,10 +770,10 @@
   mode: single
 - id: wallpanel_motion_away_alert
   alias: Security - WallPanel motion while both away
-  description: Time-sensitive push to Kieren's iPhone 17 and work iPhone when the
-    WallPanel tablet's motion sensor fires while both Kieren and T are away. 10-minute
-    cooldown, muted by turning off input_boolean.wallpanel_motion_alert_enabled. A
-    cheap tripwire, not a replacement for a real alarm.
+  description: Time-sensitive push to Kieren's iPhone 17 and work iPhone when the WallPanel
+    tablet's motion sensor fires while both Kieren and T are away. 10-minute cooldown,
+    muted by turning off input_boolean.wallpanel_motion_alert_enabled. A cheap tripwire,
+    not a replacement for a real alarm.
   triggers:
   - trigger: state
     entity_id: binary_sensor.my_wall_panel_motion_detected_2
@@ -800,8 +796,8 @@
   actions:
   - variables:
       alert_title: Motion detected at home
-      alert_message: Wall panel saw motion at {{ now().strftime('%-I:%M %p') }} —
-        nobody is home.
+      alert_message: 'Wall panel saw motion at {{ now().strftime(''%-I:%M %p'') }} —
+        nobody is home.'
   - parallel:
     - action: notify.mobile_app_kierens_iphone_17
       data:
@@ -826,17 +822,17 @@
   mode: single
 - id: blueiris_stream_watchdog
   alias: Cameras - Blue Iris stream watchdog
-  description: Reloads the Blue Iris integration when its camera images stop being
+  description: 'Reloads the Blue Iris integration when its camera images stop being
     real JPEGs. The integration bakes the BI session ID into each camera URL at entity
     creation and never refreshes it, so when BI invalidates the session the pictures
-    silently become BI's login page. See packages/blueiris_stream_watchdog.yaml for
-    the full explanation. Fires after 30s of failure, retries three times back to
-    back, then every 5 minutes until the pictures come back.
+    silently become BI''s login page. See packages/blueiris_stream_watchdog.yaml for
+    the full explanation. Fires after 30s of failure, retries three times back to back,
+    then every 5 minutes until the pictures come back.'
   triggers:
   - trigger: state
     entity_id: binary_sensor.blue_iris_streams
     to: 'off'
-    for: 00:00:30
+    for: '00:00:30'
   conditions:
   - condition: state
     entity_id: binary_sensor.blue_iris_streams
@@ -848,7 +844,7 @@
         - condition: template
           value_template: '{{ repeat.index > 3 }}'
         then:
-        - delay: 00:05:00
+        - delay: '00:05:00'
         - condition: state
           entity_id: binary_sensor.blue_iris_streams
           state: 'off'
@@ -856,7 +852,7 @@
         target:
           entity_id: camera.cameras_subfront
       - wait_template: '{{ is_state(''binary_sensor.blue_iris_streams'', ''on'') }}'
-        timeout: 00:01:00
+        timeout: '00:01:00'
         continue_on_timeout: true
       until:
       - condition: state
@@ -866,30 +862,21 @@
   max_exceeded: silent
 - id: cameras_pc_wake_on_power_restore
   alias: Power - Wake cameras PC when mains returns
-  description: 'The EcoFlow never cuts its own output, so after NUT shuts the cameras
-    PC down at 30% battery there is no AC transition for the BIOS AC Recovery setting
-    to act on and the NVR stays off. This wakes it instead.
+  description: 'The EcoFlow never cuts its own output, so after EcoFlow Power Manager
+    shuts the cameras PC down there is no AC transition for the BIOS AC Recovery
+    setting to act on and the NVR stays off. This wakes it instead.
 
 
     THE HA START TRIGGER IS THE IMPORTANT ONE. In the dominant scenario HA is not
     running when mains returns - it was shut down with unRAID at 35% battery - so
-    there is no transition for it to observe. It boots, finds everything already online,
-    and would see nothing at all. So the automation checks on every start whether
-    the NVR is reachable and wakes it if not.
-
-
-    The second trigger only matters while HA stays up, i.e. a short outage. It watches
-    the EcoFlow''s own AC-plugged-in flag over local BLE, which is measured at the
-    unit itself. ''from: off'' is load bearing: it excludes unavailable -> on, so
-    a BLE reconnect does not fire this. The 30s dwell guards against flapping at the
-    moment power returns.
-
-
-    HISTORY, 17 Sep 2026: this replaces two triggers on sensor.network_switch, the
-    Meross "Network Cupboard" plug. That plug was taken out of the EcoFlow''s input
-    path during the final rewiring, so both of its triggers were dead - one of them
-    would have fired spuriously if the plug ever came back online. The EcoFlow BLE
-    flag is a strictly better signal anyway.
+    there is no plug transition for it to observe. It boots, finds the plug already
+    online, and would see nothing at all. So the automation checks on every start
+    whether the NVR is reachable and wakes it if not. The other two triggers only
+    matter while HA stays up: a brief outage takes the Meross "Network Cupboard"
+    plug down (it is upstream of the EcoFlow on mains) so its power sensor goes
+    unavailable and returns, guarded by a 30s dwell test; and a test that switches
+    the plug relay leaves the plug online reporting 0 W, which the load-returned
+    trigger catches. Steady draw is ~120 W.
 
 
     The 60s delay lets the ping sensor get a reading and gives the PC a chance to
@@ -897,35 +884,42 @@
     retries up to five times, 90s apart, until the ping answers.
 
 
-    KNOWN BEHAVIOUR: if you shut the NVR down deliberately and HA restarts, this will
-    wake it. Disable this automation first if that is not what you want.
+    KNOWN BEHAVIOUR: if you shut the NVR down deliberately and HA restarts, this
+    will wake it. Disable this automation first if that is not what you want.
 
 
     Requires, on the PC: BIOS WakeOnLan=LanOnly, DeepSleepCtrl=Disabled, and Windows
-    Fast Startup OFF - Windows deliberately disables WoL on a hybrid-shutdown transition.
-    All three set 12 Sep 2026.'
+    Fast Startup OFF - Windows deliberately disables WoL on a hybrid-shutdown
+    transition. All three set 12 Sep 2026.'
   triggers:
   - trigger: homeassistant
     event: start
     id: ha_start
   - trigger: state
-    entity_id: binary_sensor.ecoflow_ac_plugged_in
-    from: 'off'
-    to: 'on'
-    for: 00:00:30
-    id: mains_returned
-  actions:
-  - delay: 00:01:00
+    entity_id: sensor.network_switch
+    from: unavailable
+    id: back_from_unavailable
+  - trigger: numeric_state
+    entity_id: sensor.network_switch
+    above: 20
+    for: '00:00:10'
+    id: load_returned
+  conditions:
   - condition: template
-    value_template: '{{ not is_state(''binary_sensor.cameras_pc_online'', ''on'')
-      }}'
+    value_template: '{{ trigger.id != ''back_from_unavailable'' or (trigger.to_state.state
+      | is_number and (trigger.to_state.last_changed - trigger.from_state.last_changed).total_seconds()
+      > 30) }}'
+  actions:
+  - delay: '00:01:00'
+  - condition: template
+    value_template: '{{ not is_state(''binary_sensor.cameras_pc_online'', ''on'') }}'
   - repeat:
       sequence:
       - action: button.press
         target:
           entity_id: button.wake_cameras_pc
       - wait_template: '{{ is_state(''binary_sensor.cameras_pc_online'', ''on'') }}'
-        timeout: 00:01:30
+        timeout: '00:01:30'
         continue_on_timeout: true
       until:
       - condition: or
@@ -939,40 +933,38 @@
   max_exceeded: silent
 - id: kiosk_browser_watchdog
   alias: Kiosk - Restart browser when it loses its HA connection
-  description: 'The mini-graph-card fuel chart wedges permanently if its history fetch
-    HANGS rather than fails: updateOnInterval is guarded by `!this.updating`, `updating`
-    is only cleared at the end of updateData, and the bundle contains no AbortController.
-    Neither `update_interval` nor the default 2-hourly timer can recover it - only
-    a page reload can.
+  description: >-
+    The mini-graph-card fuel chart wedges permanently if its history fetch HANGS rather than
+    fails: updateOnInterval is guarded by `!this.updating`, `updating` is only cleared at the
+    end of updateData, and the bundle contains no AbortController. Neither `update_interval`
+    nor the default 2-hourly timer can recover it - only a page reload can.
 
-    On 15 Sep a Wi-Fi adapter swap on the kiosk PC dropped the connection at 15:37.
-    The browser reconnected at 15:40, dropped again at 15:51, and never came back:
-    the chart sat on its spinner for 55 minutes while the PC itself answered SSH,
-    RDP and SMB perfectly. Crucially browser_mod was unreachable that whole time,
-    so browser_mod.refresh silently did nothing (it returns [] regardless). The HASS.Agent
-    button DID work, because it rides MQTT rather than the frontend websocket - so
-    that is what this automation uses.
+    On 15 Sep a Wi-Fi adapter swap on the kiosk PC dropped the connection at 15:37. The
+    browser reconnected at 15:40, dropped again at 15:51, and never came back: the chart sat
+    on its spinner for 55 minutes while the PC itself answered SSH, RDP and SMB perfectly.
+    Crucially browser_mod was unreachable that whole time, so browser_mod.refresh silently did
+    nothing (it returns [] regardless). The HASS.Agent button DID work, because it rides MQTT
+    rather than the frontend websocket - so that is what this automation uses.
 
-    Deliberately triggers on browser_mod''s own liveness sensor rather than on anything
-    about the chart, because this recovers any wedged-frontend symptom, not just that
-    one card.'
+    Deliberately triggers on browser_mod's own liveness sensor rather than on anything about
+    the chart, because this recovers any wedged-frontend symptom, not just that one card.
   triggers:
   - trigger: state
     entity_id: sensor.kiosk_browser_id
     to: unavailable
-    for: 00:10:00
+    for: '00:10:00'
     id: wedged
   - trigger: time_pattern
     minutes: /30
     id: retry
   conditions:
   - condition: template
-    value_template: "{{ states('sensor.kiosk_browser_id') == 'unavailable'\n   and
-      (now() - states.sensor.kiosk_browser_id.last_changed).total_seconds() > 600
-      }}"
+    value_template: >-
+      {{ states('sensor.kiosk_browser_id') == 'unavailable'
+         and (now() - states.sensor.kiosk_browser_id.last_changed).total_seconds() > 600 }}
   - condition: template
-    value_template: '{{ states(''button.kiosk_kioskfirefoxrestart'') != ''unavailable''
-      }}'
+    value_template: >-
+      {{ states('button.kiosk_kioskfirefoxrestart') != 'unavailable' }}
   actions:
   - action: button.press
     target:
@@ -981,8 +973,8 @@
     data:
       name: Kiosk browser watchdog
       entity_id: sensor.kiosk_browser_id
-      message: Restarted Firefox on the kiosk PC - browser_mod had not seen the browser
-        since {{ as_local(states.sensor.kiosk_browser_id.last_changed).strftime('%H:%M')
-        }}.
+      message: >-
+        Restarted Firefox on the kiosk PC - browser_mod had not seen the browser since {{
+        as_local(states.sensor.kiosk_browser_id.last_changed).strftime('%H:%M') }}.
   mode: single
   max_exceeded: silent
