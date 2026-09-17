@@ -27,9 +27,26 @@ restart. The stale tracker sat at `home` with a week-old position and was still 
 - Pre-removal snapshot of the config entry, device, all 27 entity registry entries and the
   `person` storage list: `backups/mobile_app-kierens-iphone-15-preremoval-20260918-062214.json`.
   Restoring the device itself means re-registering the companion app on that phone.
-- Noticed but not touched: `/config/.storage/core - Copy.entity_registry`, a stray hand-made copy
-  of the entity registry. HA never reads it, so it is inert, but it is now a week out of date and
-  still contains the iPhone 15 rows — exactly the sort of thing that misleads a future session.
+
+### Removed the stray `.storage` entity-registry copy
+`/config/.storage/core - Copy.entity_registry` — a hand-made copy (the name is Windows' "- Copy"
+suffix, so it was made over SMB) dated **8 Jan 2026**, 2.1 MB. HA loads storage by **filename**,
+not by the `key` inside the file, so despite carrying `"key": "core.entity_registry"` it was never
+read: inert, but a convincing-looking decoy for a future session grepping `.storage/`.
+
+- How stale: registry `minor_version` 19 against the live 23; 1413 entities against the live 2100;
+  186 entities in the copy no longer exist at all, and it still listed `device_tracker.kierens_iphone_15`.
+- Nothing referenced the filename anywhere in the live YAML, the packages, either dashboard or the
+  rest of `.storage/`.
+- Removed inside `tools/deploy_lock.py run` (a plain `rm`; `push` refuses `.storage/` paths by
+  design and was not used). Backed up first, gzipped, to
+  `backups/storage-core-Copy.entity_registry-20260108-snapshot.json.gz` (md5 of the original
+  `0943cf9a6acf222ca047d2d0966f0a1e`). Untracked — it is a registry dump, not repo content.
+- Verified after: live `core.entity_registry` untouched (2100 entities, unchanged mtime), API
+  healthy, no new entries in `system_log/list`. No restart or reload was involved.
+- Still there and deliberately left alone: `/config/.storage/lovelace_dashboards.bak-20260814`,
+  2 KB, from the storage-to-YAML dashboard migration. Same inert-by-filename reasoning; it is
+  small, dated and self-explanatory rather than a look-alike of a live key.
 
 ### Kiosk energy chart: export directly under usage, wider columns
 - Solar export now sits directly under the grid/controlled-load column for the same day. Before,
