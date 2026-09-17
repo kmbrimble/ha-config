@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+### Removed the dead "Kieren’s iPhone 15" mobile_app registration
+`device_tracker.kierens_iphone_15` was not an orphaned registry row — it was one of 27 entities
+on a **loaded** `mobile_app` config entry (`54554a7269eb690487d69a54f7dcf203`, device
+`25c38404365b180a9b867b9e3da98db7`, iPhone15,4 / iOS 26.6, app 2026.7.5) for the personal phone
+that was replaced by "Kieren’s iPhone 17". Removing just the registry entry would not have
+stuck: `mobile_app` recreates its entities when the config entry sets up, i.e. on the next
+restart. The stale tracker sat at `home` with a week-old position and was still listed under
+`person.kieren`.
+
+- Evidence it was dead: over the recorder's full retained window the entity produced **one** row
+  (2026-09-11 15:19 Brisbane, an HA restart) and nothing since, while `device_tracker.kierens_iphone_17`
+  produced 81 and `device_tracker.kierens_work_iphone_15` 46. Its `battery_level` attribute (60)
+  had also drifted from `sensor.kierens_iphone_15_battery_level` (40).
+- Removed with `DELETE /api/config/config_entries/entry/<entry_id>` (REST). Note there is **no**
+  `config_entries/remove` websocket command — it returns `unknown_command`. Response was
+  `{"require_restart": false}`; no restart or reload was needed.
+- HA cleaned up after it by itself: the device, all 27 entities and
+  `notify.mobile_app_kierens_iphone_15` are gone, and `person` dropped the tracker from
+  `person.kieren` without a `person/update` call. `.storage/` was never hand-edited.
+- Nothing referenced it: no hit in the repo, the live YAML, either YAML dashboard or any
+  storage-mode dashboard. `automations.yaml` only ever notified the *work* iPhone 15 and the
+  iPhone 17.
+- Pre-removal snapshot of the config entry, device, all 27 entity registry entries and the
+  `person` storage list: `backups/mobile_app-kierens-iphone-15-preremoval-20260918-062214.json`.
+  Restoring the device itself means re-registering the companion app on that phone.
+- Noticed but not touched: `/config/.storage/core - Copy.entity_registry`, a stray hand-made copy
+  of the entity registry. HA never reads it, so it is inert, but it is now a week out of date and
+  still contains the iPhone 15 rows — exactly the sort of thing that misleads a future session.
+
 ### Kiosk energy chart: export directly under usage, wider columns
 - Solar export now sits directly under the grid/controlled-load column for the same day. Before,
   it was drawn beside it. Cause: apexcharts-card generates one hidden y-axis per series, and

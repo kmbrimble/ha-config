@@ -1,0 +1,836 @@
+{
+  "config_entry": [
+    {
+      "created_at": 0.0,
+      "entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "domain": "mobile_app",
+      "modified_at": 1788059009.73487,
+      "title": "Kieren\u2019s iPhone 15",
+      "source": "registration",
+      "state": "loaded",
+      "supports_options": false,
+      "supports_remove_device": false,
+      "supports_unload": true,
+      "supports_reconfigure": false,
+      "supported_subentry_types": {},
+      "pref_disable_new_entities": false,
+      "pref_disable_polling": false,
+      "disabled_by": null,
+      "reason": null,
+      "error_reason_translation_domain": null,
+      "error_reason_translation_key": null,
+      "error_reason_translation_placeholders": null,
+      "num_subentries": 0
+    }
+  ],
+  "device": [
+    {
+      "area_id": null,
+      "configuration_url": null,
+      "config_entries": [
+        "54554a7269eb690487d69a54f7dcf203"
+      ],
+      "config_entries_subentries": {
+        "54554a7269eb690487d69a54f7dcf203": [
+          null
+        ]
+      },
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "connections": [],
+      "created_at": 0.0,
+      "disabled_by": null,
+      "entry_type": null,
+      "hw_version": null,
+      "id": "25c38404365b180a9b867b9e3da98db7",
+      "identifiers": [
+        [
+          "mobile_app",
+          "938AC699-1AA2-41CA-A1F1-57C1FC8FFF86"
+        ]
+      ],
+      "labels": [],
+      "manufacturer": "Apple",
+      "model": "iPhone15,4",
+      "model_id": null,
+      "modified_at": 1788059008.889739,
+      "name_by_user": null,
+      "name": "Kieren\u2019s iPhone 15",
+      "parent_device_id": null,
+      "primary_config_entry": "54554a7269eb690487d69a54f7dcf203",
+      "serial_number": null,
+      "sw_version": "26.6",
+      "via_device_id": null
+    }
+  ],
+  "entities": [
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": "diagnostic",
+      "entity_id": "device_tracker.kierens_iphone_15",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "839c07136074ca9bda6fa619e8a5465e",
+      "labels": [],
+      "modified_at": 1783152454.791244,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "938AC699-1AA2-41CA-A1F1-57C1FC8FFF86"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_battery_level",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "6fba7f3ac5502489343c96223896bbf9",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Battery Level",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_battery_level"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_battery_state",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "cf655dce9a2c24214c0eefa76e255d12",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Battery State",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_battery_state"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_storage",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "5c9a3523e66751df9ebecd7b5dcf1d18",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Storage",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_storage"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_sim_1",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "152e1e0babec2913409cf142247e1602",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "SIM 1",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_connectivity_sim_1"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_sim_2",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "125c405410b02d6effc09c89d8a827ea",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "SIM 2",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_connectivity_sim_2"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_geocoded_location",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "48321e0111575f62bb9a8f6b8e5db504",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Geocoded Location",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_geocoded_location"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_last_update_trigger",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "0d39816b0be5b2e4080695b0c9e5a0e8",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Last Update Trigger",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_last_update_trigger"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_ssid",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "fcb74e97369650c3630922bb6653ffa2",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "SSID",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_connectivity_ssid"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_bssid",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "e4faef5f5f25e21d4672318c573183c9",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "BSSID",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_connectivity_bssid"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_connection_type",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "993da8910d227f504f006d1e7cc7773b",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Connection Type",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_connectivity_connection_type"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_activity",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "d0fd6956d20034ffc9700482863af421",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Activity",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_activity"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_distance",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "bf01f67a2fd613750dc17b2409c4e937",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Distance",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_pedometer_distance"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_floors_ascended",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "3bf9bc484e21e3b0e7f8249409bc3020",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Floors Ascended",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_pedometer_floors_ascended"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_floors_descended",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "cc599e74a5d0ac5bef0465a2178fdd03",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Floors Descended",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_pedometer_floors_descended"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_average_active_pace",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "18e47898804e1634831d5835c272ce04",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Average Active Pace",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_pedometer_avg_active_pace"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_steps",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "98f39344d1b59a51d15e3ce63a26a8d7",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Steps",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_pedometer_steps"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 0.0,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "binary_sensor.kierens_iphone_15_focus",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "e459245d04567f3c2146b54f4de318ef",
+      "labels": [],
+      "modified_at": 0.0,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Focus",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_focus"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1727032021.179294,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": "diagnostic",
+      "entity_id": "sensor.kierens_iphone_15_app_version",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "4c6bc92e4387dfef3620c49b84de1b49",
+      "labels": [],
+      "modified_at": 1727032021.179646,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "App Version",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_app-version"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1727032021.182015,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_location_permission",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "ea618ff241c3a63c689d2c4289b8b0c6",
+      "labels": [],
+      "modified_at": 1727032021.182264,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Location permission",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_location-permission"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1736739313.940708,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_audio_output",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "fbd7f1a5de12cd3d33c87e534b93b27e",
+      "labels": [],
+      "modified_at": 1736739313.941589,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Audio Output",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_iphone-audio-output"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1778282535.812592,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "notify.kierens_iphone_15",
+      "has_entity_name": true,
+      "hidden_by": null,
+      "icon": null,
+      "id": "432a862f369619becd3b4787f20c5316",
+      "labels": [],
+      "modified_at": 1778282606.647334,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": null,
+      "platform": "mobile_app",
+      "translation_key": "notify",
+      "unique_id": "938AC699-1AA2-41CA-A1F1-57C1FC8FFF86"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1788059009.248717,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "binary_sensor.kierens_iphone_15_kiosk_mode",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "a24cb39c26f3ee27f1d7b4105d722fad",
+      "labels": [],
+      "modified_at": 1788059009.249437,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Kiosk Mode",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_kioskMode"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1788059009.257542,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_kiosk_brightness",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "ce38cb79ae5fd9618a6329c4fe25a434",
+      "labels": [],
+      "modified_at": 1788059009.258066,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Kiosk Brightness",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_kioskBrightness"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1788059009.258736,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_kiosk_volume",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "b04527b8bb6cdac2a97a9b17931a2372",
+      "labels": [],
+      "modified_at": 1788059009.259091,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Kiosk Volume",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_kioskVolume"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1788059009.259647,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "binary_sensor.kierens_iphone_15_camera_motion",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "43e4a37a02f7293b219723892cf5bc31",
+      "labels": [],
+      "modified_at": 1788059009.259948,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Camera Motion",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_cameraMotion"
+    },
+    {
+      "area_id": null,
+      "categories": {},
+      "config_entry_id": "54554a7269eb690487d69a54f7dcf203",
+      "config_subentry_id": null,
+      "created_at": 1788059009.26475,
+      "device_id": "25c38404365b180a9b867b9e3da98db7",
+      "disabled_by": null,
+      "entity_category": null,
+      "entity_id": "sensor.kierens_iphone_15_camera_stream",
+      "has_entity_name": false,
+      "hidden_by": null,
+      "icon": null,
+      "id": "3f0b4640f68964e99c50757ae6995e72",
+      "labels": [],
+      "modified_at": 1788059009.265285,
+      "name": null,
+      "options": {
+        "conversation": {
+          "should_expose": false
+        }
+      },
+      "original_name": "Camera Stream",
+      "platform": "mobile_app",
+      "translation_key": null,
+      "unique_id": "349014541a782190b07f4ddbf285e25d001cf199a4c9bcacd711c0fa6aeda95b_cameraStream"
+    }
+  ],
+  "persons": {
+    "storage": [
+      {
+        "name": "K",
+        "user_id": "f9ccc7cbfef243ccac58271cd4203197",
+        "device_trackers": [
+          "device_tracker.km_s22",
+          "device_tracker.galaxy_watch4_classic_z5ke",
+          "device_tracker.km_p11_plus_tablet",
+          "device_tracker.kierens_iphone_15",
+          "device_tracker.volvo",
+          "device_tracker.kierens_iphone_17",
+          "device_tracker.kierens_work_iphone_15"
+        ],
+        "id": "kieren",
+        "picture": null
+      },
+      {
+        "id": "t",
+        "name": "T",
+        "device_trackers": [
+          "device_tracker.tw_s22_ultra",
+          "device_tracker.t_z_fold7"
+        ],
+        "user_id": "50e0028999a545bf95ffcd6022454a73",
+        "picture": null
+      },
+      {
+        "id": "wallpanel",
+        "name": "Wallpanel",
+        "device_trackers": [
+          "device_tracker.km_p11_plus_tablet"
+        ],
+        "user_id": "0700fe624e0c46f6a4a995c78aeb991b",
+        "picture": null
+      }
+    ],
+    "config": []
+  }
+}
