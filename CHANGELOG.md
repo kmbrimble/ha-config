@@ -44,9 +44,18 @@ read: inert, but a convincing-looking decoy for a future session grepping `.stor
   `0943cf9a6acf222ca047d2d0966f0a1e`). Untracked — it is a registry dump, not repo content.
 - Verified after: live `core.entity_registry` untouched (2100 entities, unchanged mtime), API
   healthy, no new entries in `system_log/list`. No restart or reload was involved.
-- Still there and deliberately left alone: `/config/.storage/lovelace_dashboards.bak-20260814`,
-  2 KB, from the storage-to-YAML dashboard migration. Same inert-by-filename reasoning; it is
-  small, dated and self-explanatory rather than a look-alike of a live key.
+- `/config/.storage/lovelace_dashboards.bak-20260814` (2 KB, 14 Aug 2026) went the same way in a
+  second locked section, md5 `6be93f1c9aae87617574411db9ecffe1`, preserved as
+  `backups/storage-lovelace_dashboards-20260814-premigration.json`. It is the dashboard list as it
+  stood **before** the storage-to-YAML migration, so it is the only remaining record that
+  `dashboard_kiosk` and `dashboard_wall` were storage-mode, and that `energy_cost_comparison` and
+  `dashboard_electricity` existed — worth keeping in the repo, unlike the registry dump.
+- `.storage/` is now 69 entries with no `.bak`, `- Copy` or `.old` files left. The only names that
+  do not look like plain HA keys are four `esphome.01K…` per-device keys, which HA writes itself.
+- Verified after both removals: all eight dashboards still resolve over
+  `lovelace/dashboards/list` (four YAML, four storage-mode), `lovelace_dashboards` untouched at its
+  22 Aug mtime, API healthy, and `system_log/list` unchanged apart from the pre-existing
+  camera-stream, `tuya_local` and go2rtc noise.
 
 ### Kiosk energy chart: export directly under usage, wider columns
 - Solar export now sits directly under the grid/controlled-load column for the same day. Before,
