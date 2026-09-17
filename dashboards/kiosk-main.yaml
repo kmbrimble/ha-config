@@ -224,7 +224,9 @@ views:
               enabled: false
           plotOptions:
             bar:
-              columnWidth: 70%
+              # 47% = twice the old per-series bar. The 70% slot used to be split three ways,
+              # one group per column series; with one stack group the column gets all of it.
+              columnWidth: 47%
           dataLabels:
             enabled: false
           tooltip:
@@ -233,16 +235,23 @@ views:
             show: true
             position: bottom
             fontSize: 13px
+            # One stack group makes ApexCharts cluster the legend vertically (3 rows, ~69px),
+            # which squeezed the plot. Keep it on one row as before.
+            clusterGroupedSeries: false
           xaxis:
             labels:
               datetimeFormatter:
                 day: d
           grid:
             borderColor: '#333'
+        # stack_group: without it ApexCharts gives each column series its own stack group (one per
+        # generated y-axis, `apexcharts-axis-N`), so grid, controlled load and export were drawn
+        # side by side instead of stacked in one column with export directly underneath.
         series:
         - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
           name: Grid
           type: column
+          stack_group: usage
           show:
             legend_value: false
           color: 'orchid'
@@ -250,6 +259,7 @@ views:
         - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
           name: Controlled load
           type: column
+          stack_group: usage
           show:
             legend_value: false
           color: '#4fc3f7'
@@ -257,6 +267,7 @@ views:
         - entity: sensor.power_nectr_a_6cffe20e_grid_consumption
           name: Solar export
           type: column
+          stack_group: usage
           show:
             legend_value: false
           color: '#ffb74d'

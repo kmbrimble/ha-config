@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Kiosk energy chart: export directly under usage, wider columns
+- Solar export now sits directly under the grid/controlled-load column for the same day. Before,
+  it was drawn beside it. Cause: apexcharts-card generates one hidden y-axis per series, and
+  ApexCharts puts each axis's series in its own stack group (`apexcharts-axis-N`). So grid,
+  controlled load and export were three side-by-side groups: 5.2px bars 10px apart, and
+  controlled load was never actually stacked on grid.
+  - Fix: `stack_group: usage` on the three column series, so all three share one stack.
+  - Verified: the bars now share x, the grid bar's bottom meets the export bar's top at the
+    zero line, and ApexCharts reports one group.
+- Columns are twice as wide: `plotOptions.bar.columnWidth` 70% -> 47%, 5.2px -> 10.9px.
+- `legend.clusterGroupedSeries: false`. A shared stack group otherwise makes ApexCharts stack
+  the legend vertically (23px -> 69px), which squeezed the plot from 144px to 98px. With the
+  option set, the legend is back on one row and the plot back to 144px.
+- The card box is unchanged (`x1740,y588,w407,h283`), and so are both geometry baselines.
+  The min/max/average lines sit at the same y positions as before.
+- Deployed through `tools/deploy_lock.py` (candidate, then live), and the Kiosk was refreshed.
+- Pre-existing, not from this change: the Kiosk render test intermittently fails on
+  `{code: unknown_error, message: Unknown error}` in the console. A 10-run A/B on
+  `kiosk-candidate` failed 1 of 10 with `origin/main`'s dashboard, and 0 of 10 with this change.
+
 ### Deploy lock
 Two sessions in two clean git worktrees could still write to the live HA at the same time. Every
 write to the live config now happens inside `tools/deploy_lock.py run`, and every copy goes
