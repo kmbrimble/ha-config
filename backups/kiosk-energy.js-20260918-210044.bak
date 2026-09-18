@@ -18,6 +18,7 @@
   const HISTORY_START = '2026-01-01T00:00:00Z';
   // Six series call in at once on every refresh; share one fetch between them.
   const CACHE_MS = 5 * 60 * 1000;
+  const HALF_DAY_MS = 12 * 60 * 60 * 1000;
 
   let cached = null;
 
@@ -49,24 +50,19 @@
   }
 
   // Points for one series between `start` and `end` (Dates from apexcharts-card).
-  // Columns sit at midnight (the statistics bucket start), not midday. apexcharts-card always
-  // forces the x-axis's own min/max to exactly [start, end] regardless of what any series' data
-  // contains, so alignment isn't won in this file at all — it's won by the dashboard YAML making
-  // [start, end] land exactly on the first and last bar's midnight (see the span/tickAmount
-  // comment in kiosk-main.yaml). This file only has to (a) put bars on those same midnights and
-  // (b) not lose the bar that now sits exactly on `end` now that it's an inclusive edge, not a
-  // window a bar merely falls inside. Export is negated so it draws below the axis.
+  // Columns sit at midday so each bar is centred in its day on the time axis. Export is negated
+  // so it draws below the axis. Reference lines are two points spanning the whole window.
   function toSeries(days, stats, key, start, end) {
-    // apexcharts-card doesn't always pass an exact midnight: observed 1ms past it on 2026-09-16.
-    // Bars sit exactly on midnight (no HALF_DAY_MS cushion), and `end` is now itself the last
-    // bar's exact timestamp (not a window merely containing it), so both edges need tolerance.
-    const windowed = days.filter((d) => d.start >= start.getTime() - 60000 && d.start <= end.getTime() + 60000);
     if (key === 'min' || key === 'max' || key === 'avg') {
-      if (!stats || !windowed.length) return [];
-      return [[windowed[0].start, stats[key]], [windowed[windowed.length - 1].start, stats[key]]];
+      if (!stats) return [];
+      return [[start.getTime(), stats[key]], [end.getTime(), stats[key]]];
     }
     const sign = key === 'export' ? -1 : 1;
-    return windowed.map((d) => [d.start, sign * d[key]]);
+    // Window by the column's midday, not the day's midnight: apexcharts-card passes a start 1ms
+    // after midnight, which would silently drop the oldest day.
+    return days
+      .map((d) => [d.start + HALF_DAY_MS, sign * d[key]])
+      .filter(([x]) => x >= start.getTime() && x < end.getTime());
   }
 
   async function load(hass) {

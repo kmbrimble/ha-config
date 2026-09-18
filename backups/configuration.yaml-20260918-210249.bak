@@ -72,7 +72,7 @@ lovelace:
       type: module
     # Data source for that chart's series, from www/kiosk-energy.js. Must be a resource (awaited)
     # so window.kioskEnergy exists before the chart's data generators run.
-    - url: /local/kiosk-energy.js?v=5
+    - url: /local/kiosk-energy.js?v=3
       type: module
   dashboards:
     kiosk-main:

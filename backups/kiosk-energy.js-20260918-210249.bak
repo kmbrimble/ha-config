@@ -49,18 +49,15 @@
   }
 
   // Points for one series between `start` and `end` (Dates from apexcharts-card).
-  // Columns sit at midnight (the statistics bucket start), not midday. apexcharts-card always
-  // forces the x-axis's own min/max to exactly [start, end] regardless of what any series' data
-  // contains, so alignment isn't won in this file at all — it's won by the dashboard YAML making
-  // [start, end] land exactly on the first and last bar's midnight (see the span/tickAmount
-  // comment in kiosk-main.yaml). This file only has to (a) put bars on those same midnights and
-  // (b) not lose the bar that now sits exactly on `end` now that it's an inclusive edge, not a
-  // window a bar merely falls inside. Export is negated so it draws below the axis.
+  // Columns sit at midnight (the statistics bucket start), not midday: ApexCharts' datetime xaxis
+  // auto-generates "nice" ticks at local-midnight boundaries regardless of where the data points
+  // actually are, so a midday offset put every bar 12h away from the tick/label meant to sit
+  // above it. Export is negated so it draws below the axis. Reference lines are pinned to the
+  // first/last VISIBLE bar rather than the raw window edges, so the axis's own min/max — which
+  // ApexCharts also uses to decide where to stop generating ticks — never reaches past yesterday
+  // into today.
   function toSeries(days, stats, key, start, end) {
-    // apexcharts-card doesn't always pass an exact midnight: observed 1ms past it on 2026-09-16.
-    // Bars sit exactly on midnight (no HALF_DAY_MS cushion), and `end` is now itself the last
-    // bar's exact timestamp (not a window merely containing it), so both edges need tolerance.
-    const windowed = days.filter((d) => d.start >= start.getTime() - 60000 && d.start <= end.getTime() + 60000);
+    const windowed = days.filter((d) => d.start >= start.getTime() && d.start < end.getTime());
     if (key === 'min' || key === 'max' || key === 'avg') {
       if (!stats || !windowed.length) return [];
       return [[windowed[0].start, stats[key]], [windowed[windowed.length - 1].start, stats[key]]];

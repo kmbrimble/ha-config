@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+### Fixed the Kiosk energy chart's column/label misalignment, and switched labels to day letters
+The daily columns sat about 12 hours away from the date number printed under them, and the last
+tick/label sometimes had no column under it at all. Root cause: apexcharts-card always forces the
+x-axis's min/max to exactly the queried `[start, end]` span, regardless of what any series'
+actual data points are — so the previous fix attempt (centring each column at midday, and later
+pinning the reference lines to the first/last real bar) could never have worked, because nothing
+in `kiosk-energy.js` controls the axis extent. On top of that, ApexCharts explicitly ignores
+`xaxis.tickAmount` on a `datetime`-type axis, so its un-forced tick count/positions are an
+auto-picked, evenly-spaced numeric division of `[start, end]` with no date-aware rounding at all —
+confirmed by dumping the chart's internal `w.globals` state directly (`minX`/`maxX`/`xAxisScale`)
+against the live dashboard, rather than reasoning about it from documentation alone.
+
+Fixed in `dashboards/kiosk-{main,candidate}.yaml` and `www/kiosk-energy.js`:
+- Columns sit at midnight (the statistics bucket start) instead of midday.
+- `graph_span: 13d` + `span: {offset: -2d}` (was `14d` / `-1d`) makes `[start, end]` exactly
+  `[yesterday minus 13 days, yesterday]`, both local midnight — 14 calendar days inclusive, same
+  count as before, just phrased so the axis's forced max is yesterday's midnight rather than
+  today's.
+- `xaxis.type: numeric` with `tickAmount: 13` forces exactly 14 ticks evenly dividing that exact
+  13-day range into 1-day steps, landing each tick precisely on a bar. A forced tickAmount always
+  ticks both axis ends, which is why the offset had to move the axis max off today specifically,
+  not just anywhere close to it.
+- `xaxis.labels.formatter` (an `EVAL:` function, apexcharts-card's mechanism for a real JS
+  function in `apex_config`) replaces the date-of-month label with a single capital
+  day-of-week letter (M T W T F S S), rounded to the nearest minute before reading `.getDay()` —
+  the last of the 14 evenly-computed tick values landed a fraction of a millisecond before true
+  midnight (`1789567199999.96`, floating-point drift from the even division), just enough to read
+  the wrong side of the day boundary.
+- `extend_to: false` on the three reference-line series, since apexcharts-card extends `line`-type
+  series to the raw window edge by default regardless of `data_generator`.
+
+Verified with a throwaway diagnostic reading the live chart's internal ApexCharts state
+(`w.globals.minX/maxX/xAxisScale`) plus the Playwright suite's screenshot of the rendered card,
+against both the candidate and (after promotion) the live `kiosk-main` dashboard.
+
 ### Removed the dead "Kieren’s iPhone 15" mobile_app registration
 `device_tracker.kierens_iphone_15` was not an orphaned registry row — it was one of 27 entities
 on a **loaded** `mobile_app` config entry (`54554a7269eb690487d69a54f7dcf203`, device

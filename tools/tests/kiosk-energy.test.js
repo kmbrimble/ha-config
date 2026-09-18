@@ -44,13 +44,24 @@ test('summary uses grid + controlled load over complete days only', () => {
   assert.equal(summarise([], T0), null);
 });
 
-test('columns are centred on midday, windowed, and export is negative', () => {
+test('columns sit at the day start (midnight), windowed, and export is negative', () => {
   const { toDays, toSeries } = loadModule()._internal;
   const days = toDays(RESULT);
   const start = new Date(T0 + DAY);
   const end = new Date(T0 + 3 * DAY);
-  assert.deepEqual(plain(toSeries(days, null, 'grid', start, end)), [[T0 + DAY + DAY / 2, 20], [T0 + 2 * DAY + DAY / 2, 15]]);
-  assert.deepEqual(plain(toSeries(days, null, 'export', start, end).map((p) => p[1])), [-1, 0]);
+  assert.deepEqual(
+    plain(toSeries(days, null, 'grid', start, end)),
+    [[T0 + DAY, 20], [T0 + 2 * DAY, 15], [T0 + 3 * DAY, 5]],
+  );
+  assert.deepEqual(plain(toSeries(days, null, 'export', start, end).map((p) => p[1])), [-1, 0, 0]);
+});
+
+test('a day sitting exactly on `end` is kept: the dashboard now makes end a real bar, not just a window edge', () => {
+  const { toDays, toSeries } = loadModule()._internal;
+  const days = toDays(RESULT);
+  const start = new Date(T0);
+  const end = new Date(T0 + 3 * DAY); // equals the last day's own timestamp, not past it
+  assert.equal(toSeries(days, null, 'grid', start, end).length, 4);
 });
 
 test('the oldest day survives the 1ms-past-midnight start apexcharts-card passes', () => {
@@ -61,12 +72,17 @@ test('the oldest day survives the 1ms-past-midnight start apexcharts-card passes
   assert.equal(toSeries(days, null, 'grid', start, end).length, 4);
 });
 
-test('reference lines span the window, and are empty with no history', () => {
-  const { toSeries } = loadModule()._internal;
-  const start = new Date(T0);
-  const end = new Date(T0 + 14 * DAY);
-  assert.deepEqual(plain(toSeries([], { min: 1, max: 3, avg: 2 }, 'avg', start, end)), [[T0, 2], [T0 + 14 * DAY, 2]]);
-  assert.equal(toSeries([], null, 'max', start, end).length, 0);
+test('reference lines are pinned to the first/last visible bar, not the raw window edges', () => {
+  const { toDays, toSeries } = loadModule()._internal;
+  const days = toDays(RESULT);
+  const start = new Date(T0 - DAY); // window starts a day before the data
+  const end = new Date(T0 + 5 * DAY); // and ends a day after
+  assert.deepEqual(
+    plain(toSeries(days, { min: 1, max: 3, avg: 2 }, 'avg', start, end)),
+    [[T0, 2], [T0 + 3 * DAY, 2]],
+  );
+  assert.equal(toSeries([], { min: 1, max: 3, avg: 2 }, 'avg', start, end).length, 0, 'no visible bars means no line either');
+  assert.equal(toSeries(days, null, 'max', start, end).length, 0);
 });
 
 test('series() shares one fetch across calls and retries after a failure', async () => {

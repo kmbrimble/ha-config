@@ -193,24 +193,6 @@ views:
       # lovelace resource), which reads the nectr integration's external statistics. `entity` is
       # only a carrier - apexcharts-card requires one - and a state change on it triggers a refresh.
       # The window ends at yesterday because Nectr publishes a day's usage the next day.
-      #
-      # Tick/label alignment: apexcharts-card ALWAYS forces the x-axis's min/max to exactly
-      # [start, end] of this span, no matter what any series' data contains — pinning a series'
-      # own points (e.g. the reference lines below) cannot change that. So alignment is won here,
-      # not in kiosk-energy.js:
-      #   - graph_span 13d + offset -2d makes [start, end] = [yesterday minus 13 days, yesterday],
-      #     both exactly local midnight - the same instants kiosk-energy.js puts its bars on. That
-      #     is 14 calendar days inclusive (yesterday minus 13 days, through yesterday itself).
-      #   - xaxis.type: numeric (not the datetime this card defaults to) because ApexCharts
-      #     explicitly ignores tickAmount on a datetime x-axis; ticks on an unforced datetime axis
-      #     are an auto-picked count evenly subdividing [start, end] with NO date-rounding, which
-      #     is the original bug (bars off by 12h) and, it turns out, not fixable by choosing a
-      #     cleverer offset - it needs a real per-day tick count.
-      #   - tickAmount: 13 forces exactly 14 ticks (13 intervals), evenly dividing the exact 13-day
-      #     range into 1-day steps - each one lands precisely on a bar's midnight.
-      #   - offset -2d rather than -1d specifically so the axis max is yesterday's midnight, not
-      #     today's: a forced tickAmount always puts a tick at both axis ends, so if max were
-      #     today, today would always get a tick/label - with no column under it once, again.
       - type: custom:apexcharts-card
         card_mod:
           style: |
@@ -220,10 +202,10 @@ views:
               border: none !important;
               box-shadow: none !important;
             }
-        graph_span: 13d
+        graph_span: 14d
         span:
           end: day
-          offset: -2d
+          offset: -1d
         stacked: true
         update_interval: 30min
         header:
@@ -257,17 +239,9 @@ views:
             # which squeezed the plot. Keep it on one row as before.
             clusterGroupedSeries: false
           xaxis:
-            type: numeric
-            tickAmount: 13
             labels:
-              # Single capital day-of-week letter (M T W T F S S), not the date-of-month.
-              # `value` is the raw tick ms (a local midnight - see the span/tickAmount comment
-              # above); EVAL: is apexcharts-card's mechanism for a real JS function in apex_config.
-              # Rounded to the nearest minute: ApexCharts computes 14 evenly-spaced ticks by
-              # floating-point division, and the last one lands a fraction of a millisecond short
-              # of true midnight (observed 1789567199999.96, 0.04ms early) - just enough for
-              # new Date(...).getDay() to read the wrong side of midnight and show the wrong letter.
-              formatter: 'EVAL:function(value) { return "SMTWTFS"[new Date(Math.round(value / 60000) * 60000).getDay()]; }'
+              datetimeFormatter:
+                day: d
           grid:
             borderColor: '#333'
         # stack_group: without it ApexCharts gives each column series its own stack group (one per
@@ -304,11 +278,6 @@ views:
           color: '#e0e0e0'
           stroke_width: 1.5
           stroke_dash: 0
-          # apexcharts-card extends line series to the raw window edge by default (extend_to:
-          # 'end'), regardless of what data_generator returns. That silently re-added a point past
-          # the last real bar, dragging the x-axis's own min/max back out past yesterday and
-          # undoing the point of pinning this line to the first/last visible bar in kiosk-energy.js.
-          extend_to: false
           show:
             in_legend: false
             legend_value: false
@@ -319,7 +288,6 @@ views:
           color: '#e0e0e0'
           stroke_width: 1.5
           stroke_dash: 0
-          extend_to: false
           show:
             in_legend: false
             legend_value: false
@@ -330,7 +298,6 @@ views:
           color: '#e0e0e0'
           stroke_width: 1.5
           stroke_dash: 6
-          extend_to: false
           show:
             in_legend: false
             legend_value: false
