@@ -130,6 +130,7 @@ sensor:
       
 recorder:
   db_url: !secret mariadb_recorder_url
+  auto_purge: false
   
 template:
   - trigger:

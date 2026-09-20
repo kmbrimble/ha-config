@@ -350,245 +350,188 @@
   alias: Motion - Side Yard
   description: ''
   triggers:
-  - entity_id:
-    - binary_sensor.cameras_side_yard_motion
-    from: 'off'
+  - trigger: state
+    entity_id: binary_sensor.cameras_side_yard_motion
     to: 'on'
-    trigger: state
+    id: 'on'
+  - trigger: state
+    entity_id: binary_sensor.cameras_side_yard_motion
+    to: 'off'
+    for:
+      minutes: 5
+    id: 'off'
   conditions:
   - condition: sun
     before: sunrise
     after: sunset
-  - condition: device
-    type: is_off
-    device_id: 0a3e45622f179e41a8db137ab6525afc
-    entity_id: bf1a694bac8a348c242da0933d5ba290
-    domain: light
   actions:
-  - alias: Turn on the light
-    action: light.turn_on
-    data:
-      brightness_pct: 100
-    target:
-      entity_id:
-      - light.bedroom_3
-  - alias: Wait until there is no motion from device
-    wait_for_trigger:
-      entity_id: binary_sensor.cameras_top_yard_motion
-      from: 'on'
-      to: 'off'
-      trigger: state
-    timeout:
-      hours: 0
-      minutes: 1
-      seconds: 0
-      milliseconds: 0
-  - alias: Wait the number of seconds that has been set
-    delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-      milliseconds: 0
-  - alias: Turn off the light
-    action: light.turn_off
-    data: {}
-    target:
-      entity_id:
-      - light.bedroom_3
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 5
-      milliseconds: 0
-  - alias: Turn off the light
-    action: light.turn_off
-    data: {}
-    target:
-      entity_id:
-      - light.bedroom_3
-  mode: single
-  max_exceeded: silent
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: 'on'
+      - condition: device
+        type: is_off
+        device_id: 0a3e45622f179e41a8db137ab6525afc
+        entity_id: bf1a694bac8a348c242da0933d5ba290
+        domain: light
+      sequence:
+      - alias: Turn on the light
+        action: light.turn_on
+        data:
+          brightness_pct: 100
+        target:
+          entity_id: light.bedroom_3
+    - conditions:
+      - condition: trigger
+        id: 'off'
+      sequence:
+      - alias: Turn off the light
+        action: light.turn_off
+        target:
+          entity_id: light.bedroom_3
+  mode: restart
+
 - id: '1753261770657'
   alias: Motion - Front
   description: ''
   triggers:
-  - entity_id:
-    - binary_sensor.cameras_front_motion
-    from: 'off'
+  - trigger: state
+    entity_id: binary_sensor.cameras_front_motion
     to: 'on'
-    trigger: state
+    id: 'on'
+  - trigger: state
+    entity_id: binary_sensor.cameras_front_motion
+    to: 'off'
+    for:
+      minutes: 5
+    id: 'off'
   conditions:
   - condition: sun
     before: sunrise
     after: sunset
-  - condition: device
-    type: is_off
-    device_id: e49b5f86ab3c7c2b93b7aaf74c9f7d91
-    entity_id: 0c5e0bdf2381f3c69564a093b897f52e
-    domain: light
   actions:
-  - alias: Turn on the light
-    action: light.turn_on
-    data:
-      brightness_pct: 100
-    target:
-      entity_id:
-      - light.house_front
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 10
-      milliseconds: 0
-  - alias: Turn on the light
-    action: light.turn_on
-    data:
-      brightness_pct: 100
-    target:
-      entity_id:
-      - light.bedroom_3
-  - alias: Wait until there is no motion from device
-    wait_for_trigger:
-      entity_id: binary_sensor.cameras_top_yard_motion
-      from: 'on'
-      to: 'off'
-      trigger: state
-    timeout:
-      hours: 0
-      minutes: 1
-      seconds: 0
-      milliseconds: 0
-  - alias: Wait the number of seconds that has been set
-    delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-      milliseconds: 0
-  - alias: Turn off the light
-    action: light.turn_off
-    data: {}
-    target:
-      entity_id:
-      - light.house_front
-      - light.bedroom_3
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 5
-      milliseconds: 0
-  - alias: Turn off the light
-    action: light.turn_off
-    data: {}
-    target:
-      entity_id:
-      - light.house_front
-      - light.bedroom_3
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: 'on'
+      - condition: device
+        type: is_off
+        device_id: e49b5f86ab3c7c2b93b7aaf74c9f7d91
+        entity_id: 0c5e0bdf2381f3c69564a093b897f52e
+        domain: light
+      sequence:
+      - alias: Turn on the light
+        action: light.turn_on
+        data:
+          brightness_pct: 100
+        target:
+          entity_id: light.house_front
+      - delay:
+          seconds: 10
+      - alias: Turn on the light
+        action: light.turn_on
+        data:
+          brightness_pct: 100
+        target:
+          entity_id: light.bedroom_3
+    - conditions:
+      - condition: trigger
+        id: 'off'
+      sequence:
+      - alias: Turn off the light
+        action: light.turn_off
+        target:
+          entity_id:
+          - light.house_front
+          - light.bedroom_3
   mode: restart
-  max_exceeded: silent
+
 - id: '1753261988791'
   alias: Motion - Back Gate
   description: ''
   triggers:
-  - entity_id:
-    - binary_sensor.cameras_back_gate_motion
-    from: 'off'
+  - trigger: state
+    entity_id: binary_sensor.cameras_back_gate_motion
     to: 'on'
-    trigger: state
+    id: 'on'
+  - trigger: state
+    entity_id: binary_sensor.cameras_back_gate_motion
+    to: 'off'
+    for:
+      minutes: 5
+    id: 'off'
   conditions:
   - condition: sun
     before: sunrise
     after: sunset
-  - condition: device
-    type: is_off
-    device_id: e60fb95bf9ccc89231320184f9a4a3c1
-    entity_id: 20ba9894196cda5683972ad4ae88c931
-    domain: light
   actions:
-  - alias: Turn on the light
-    action: light.turn_on
-    data:
-      brightness_pct: 100
-    target:
-      entity_id:
-      - light.lower_deck
-      - light.upper_deck
-  - alias: Wait until there is no motion from device
-    wait_for_trigger:
-      entity_id: binary_sensor.cameras_top_yard_motion
-      from: 'on'
-      to: 'off'
-      trigger: state
-    timeout:
-      hours: 0
-      minutes: 1
-      seconds: 0
-      milliseconds: 0
-  - alias: Wait the number of seconds that has been set
-    delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-      milliseconds: 0
-  - alias: Turn off the light
-    action: light.turn_off
-    data: {}
-    target:
-      entity_id:
-      - light.lower_deck
-      - light.upper_deck
-  mode: single
-  max_exceeded: silent
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: 'on'
+      - condition: device
+        type: is_off
+        device_id: e60fb95bf9ccc89231320184f9a4a3c1
+        entity_id: 20ba9894196cda5683972ad4ae88c931
+        domain: light
+      sequence:
+      - alias: Turn on the light
+        action: light.turn_on
+        data:
+          brightness_pct: 100
+        target:
+          entity_id:
+          - light.lower_deck
+          - light.upper_deck
+    - conditions:
+      - condition: trigger
+        id: 'off'
+      sequence:
+      - alias: Turn off the light
+        action: light.turn_off
+        target:
+          entity_id:
+          - light.lower_deck
+          - light.upper_deck
+  mode: restart
+
 - id: '1753262270557'
   alias: Motion - Footpath
   description: ''
   triggers:
-  - entity_id:
-    - binary_sensor.cameras_front_gate_motion
-    from: 'off'
+  - trigger: state
+    entity_id: binary_sensor.cameras_front_gate_motion
     to: 'on'
-    trigger: state
+    id: 'on'
+  - trigger: state
+    entity_id: binary_sensor.cameras_front_gate_motion
+    to: 'off'
+    for:
+      minutes: 5
+    id: 'off'
   conditions:
   - condition: sun
-    before: sunrise
     after: sunset
     after_offset: '2:00:00'
   actions:
-  - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
-    domain: switch
-  - alias: Wait until there is no motion from device
-    wait_for_trigger:
-      entity_id: binary_sensor.cameras_top_yard_motion
-      from: 'on'
-      to: 'off'
-      trigger: state
-    timeout:
-      hours: 0
-      minutes: 0
-      seconds: 30
-      milliseconds: 0
-  - alias: Wait the number of seconds that has been set
-    delay:
-      hours: 0
-      minutes: 0
-      seconds: 30
-      milliseconds: 0
-  - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
-    domain: switch
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 5
-      milliseconds: 0
-  - type: turn_off
-    device_id: 6f6d82318cd433f95ed2c95e2657d221
-    entity_id: 3b175808cb3886e98a950a5562156377
-    domain: switch
-  mode: parallel
-  max_exceeded: silent
-  max: 100
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: 'on'
+      sequence:
+      - alias: Turn on the footpath lights
+        action: switch.turn_on
+        target:
+          entity_id: switch.footpath_lights
+    - conditions:
+      - condition: trigger
+        id: 'off'
+      sequence:
+      - alias: Turn off the footpath lights
+        action: switch.turn_off
+        target:
+          entity_id: switch.footpath_lights
+  mode: restart
 - id: '1753623793587'
   alias: Bed light off at night if noone home
   description: ''
