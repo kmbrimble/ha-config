@@ -356,19 +356,20 @@
     id: 'on'
   - trigger: state
     entity_id: binary_sensor.cameras_side_yard_motion
+    from: 'on'
     to: 'off'
     for:
       minutes: 5
     id: 'off'
-  conditions:
-  - condition: sun
-    before: sunrise
-    after: sunset
+  conditions: []
   actions:
   - choose:
     - conditions:
       - condition: trigger
         id: 'on'
+      - condition: sun
+        before: sunrise
+        after: sunset
       - condition: device
         type: is_off
         device_id: 0a3e45622f179e41a8db137ab6525afc
@@ -401,19 +402,20 @@
     id: 'on'
   - trigger: state
     entity_id: binary_sensor.cameras_front_motion
+    from: 'on'
     to: 'off'
     for:
       minutes: 5
     id: 'off'
-  conditions:
-  - condition: sun
-    before: sunrise
-    after: sunset
+  conditions: []
   actions:
   - choose:
     - conditions:
       - condition: trigger
         id: 'on'
+      - condition: sun
+        before: sunrise
+        after: sunset
       - condition: device
         type: is_off
         device_id: e49b5f86ab3c7c2b93b7aaf74c9f7d91
@@ -456,19 +458,20 @@
     id: 'on'
   - trigger: state
     entity_id: binary_sensor.cameras_back_gate_motion
+    from: 'on'
     to: 'off'
     for:
       minutes: 5
     id: 'off'
-  conditions:
-  - condition: sun
-    before: sunrise
-    after: sunset
+  conditions: []
   actions:
   - choose:
     - conditions:
       - condition: trigger
         id: 'on'
+      - condition: sun
+        before: sunrise
+        after: sunset
       - condition: device
         type: is_off
         device_id: e60fb95bf9ccc89231320184f9a4a3c1
@@ -505,19 +508,20 @@
     id: 'on'
   - trigger: state
     entity_id: binary_sensor.cameras_front_gate_motion
+    from: 'on'
     to: 'off'
     for:
       minutes: 5
     id: 'off'
-  conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '2:00:00'
+  conditions: []
   actions:
   - choose:
     - conditions:
       - condition: trigger
         id: 'on'
+      - condition: sun
+        after: sunset
+        after_offset: '2:00:00'
       sequence:
       - alias: Turn on the footpath lights
         action: switch.turn_on
