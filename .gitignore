@@ -15,3 +15,6 @@ backups/*config_entries*
 # Python bytecode - swept in accidentally 2026-09-15 by a `git add -A`
 __pycache__/
 *.pyc
+
+# Long-lived token for tools/go2rtc_eof_check.py's local websocket auth (live-config only)
+tools/.ha_token

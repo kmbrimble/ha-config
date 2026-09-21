@@ -938,3 +938,44 @@
         }}.
   mode: single
   max_exceeded: silent
+- id: go2rtc_substream_eof_watchdog
+  alias: Cameras - go2rtc substream watchdog
+  description: 'Recovers a frozen kiosk WebRTC camera pane caused by go2rtc''s ffmpeg
+    RTSP producer dying on the five dual-lens "sub" streams. See kmbrimble/ha-config#22
+    and claude/kiosk-camera-framerate.md.
+
+    go2rtc can''t parse these cameras'' RTSP natively and falls back to an ffmpeg
+    producer, which drops the connection with `error=EOF` every 5-15 minutes and
+    reconnects. An isolated reconnect usually recovers on its own, but a burst of
+    them tends to leave the kiosk''s WebRTC <video> element stuck on a stale frame,
+    because nothing forces the browser to renegotiate. Neither blueiris_stream_watchdog
+    (checks BI''s HTTP session, unrelated) nor kiosk_browser_watchdog (checks the
+    browser_mod websocket, which stays up fine) can see this.
+
+    sensor.go2rtc_substream_eof_bursts (packages/go2rtc_stream_watchdog.yaml) reports
+    how many NEW go2rtc EOF log entries for these streams appeared in roughly the
+    last 3 minutes. Two or more is treated as a burst worth recovering from. Reuses
+    button.kiosk_kioskfirefoxrestart - the same HASS.Agent/MQTT button kiosk_browser_watchdog
+    uses - which forces a fresh page load and makes the kiosk renegotiate its WebRTC
+    connections. At least 10 minutes between presses so a stretch of ongoing churn
+    does not restart the kiosk browser every 3 minutes.'
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.go2rtc_substream_eof_bursts
+    above: 1
+  conditions:
+  - condition: template
+    value_template: '{{ this.attributes.last_triggered is none or (now() - this.attributes.last_triggered).total_seconds()
+      > 600 }}'
+  actions:
+  - action: button.press
+    target:
+      entity_id: button.kiosk_kioskfirefoxrestart
+  - action: logbook.log
+    data:
+      name: go2rtc substream watchdog
+      entity_id: sensor.go2rtc_substream_eof_bursts
+      message: Restarted Firefox on the kiosk PC after {{ states('sensor.go2rtc_substream_eof_bursts')
+        }} go2rtc EOF reconnects on the dual-lens substreams in the last ~3 minutes.
+  mode: single
+  max_exceeded: silent
