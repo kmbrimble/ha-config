@@ -530,6 +530,11 @@
     - conditions:
       - condition: trigger
         id: 'off'
+      - condition: not
+        conditions:
+        - condition: time
+          after: sensor.sun_dusk
+          before: '20:30:00'
       sequence:
       - alias: Turn off the footpath lights
         action: switch.turn_off
