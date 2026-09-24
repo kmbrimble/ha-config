@@ -1,0 +1,46 @@
+# go2rtc WebRTC stream watchdog — health probe for the kiosk's dual-lens cameras
+#
+# The automation that uses this lives in automations.yaml
+# ("Cameras - go2rtc substream watchdog") so it stays editable in the HA UI.
+# Only the sensor lives here, because `command_line:` is a platform config and
+# cannot be created in the UI.
+#
+# WHY THIS EXISTS — see kmbrimble/ha-config#22 and claude/kiosk-camera-framerate.md
+# ---------------------------------------------------------------------------
+# The Kiosk's five dual-lens "sub" camera panes (camera.bi_subsideyard,
+# bi_subbottomyard, bi_subfront, bi_subtopyard, bi_subbackgate) are WebRTC via
+# HA's built-in go2rtc. go2rtc can't parse these cameras' RTSP natively (H.264
+# Main profile with weighted prediction, direct-to-wire from the camera's own
+# ONVIF substream — go2rtc's demuxer chokes on it), so it falls back to an
+# `ffmpeg:` producer. That ffmpeg producer's RTSP connection to Blue Iris dies
+# with `error=EOF` roughly every 5-15 minutes and go2rtc reconnects it — ~200
+# times in the first 32 hours after an HA restart. An isolated reconnect
+# usually recovers on its own, but a burst of them tends to leave the kiosk's
+# WebRTC <video> element stuck on a stale frame, because nothing forces the
+# browser side to renegotiate.
+#
+# Neither existing camera watchdog would ever catch this:
+# - `blueiris_stream_watchdog` only checks Blue Iris's own HTTP still-image
+#   session (the unrelated `custom_components/blueiris` entities).
+# - `kiosk_browser_watchdog` only checks that browser_mod's websocket is
+#   connected — the websocket stays up fine while the video freezes.
+#
+# So this probe looks at the one place the problem actually shows up: HA's own
+# `system_log`. `tools/go2rtc_eof_check.py` calls `system_log/list` over HA's
+# local websocket API (127.0.0.1:8123, same host go2rtc itself runs on) and
+# counts how many NEW go2rtc EOF entries for these five streams have appeared
+# since the last check (HA dedupes log entries into one object with a running
+# `count`, so the script keeps a small state file to turn that cumulative
+# total into a per-interval delta). A burst of 2+ in one 3-minute window is
+# the signal the automation acts on.
+#
+# Deliberately modelled on packages/blueiris_stream_watchdog.yaml's shape.
+
+command_line:
+  - sensor:
+      name: go2rtc Substream EOF Bursts
+      unique_id: go2rtc_substream_eof_bursts
+      scan_interval: 180
+      command_timeout: 15
+      command: "python3 /config/tools/go2rtc_eof_check.py"
+      value_template: "{{ value | int(0) }}"
