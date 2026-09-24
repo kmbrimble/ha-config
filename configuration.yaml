@@ -131,6 +131,12 @@ sensor:
 recorder:
   db_url: !secret mariadb_recorder_url
   auto_purge: false
+
+# custom_components.nectr logs a line per coordinator refresh at INFO; HA's default level (WARNING)
+# would drop them before they reach the journal and Loki.
+logger:
+  logs:
+    custom_components.nectr: info
   
 template:
   - trigger:
