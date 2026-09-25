@@ -982,12 +982,12 @@
 - id: '1790350000001'
   alias: Master Bedroom - Timeshifter 4am wake (26 Sep 2026)
   description: >-
-    One-off: runs the Master Bedroom Sunrise script so the lights reach full cool white at 04:00
-    on 26 Sep 2026 (Timeshifter wake for the overseas trip). The date condition makes it inert on
-    every other day; change or remove it to reuse.
+    One-off: starts the five-minute Master Bedroom Sunrise script at 04:00 on 26 Sep 2026
+    (Timeshifter wake for the overseas trip), reaching full cool white at 04:05. The date
+    condition makes it inert on every other day; change or remove it to reuse.
   triggers:
     - trigger: time
-      at: '03:55:00'
+      at: '04:00:00'
   conditions:
     - condition: template
       value_template: "{{ now().strftime('%Y-%m-%d') == '2026-09-26' }}"
