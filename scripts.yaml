@@ -192,3 +192,54 @@ bike_close:
     - service: switch.turn_off
       target:
         entity_id: switch.bike_garage
+master_bedroom_sunrise:
+  alias: Master Bedroom Sunrise
+  description: >-
+    Five-minute wake-up ramp for the master bedroom. Minute 1 brings the six lights on one at a
+    time at 1% (Master Bedroom 1, 2, 3, Tiggy, Tizzy, Bed Light, ~10 s apart); minutes 2-5 raise
+    them all together to 100% on a quadratic curve so the low end rises gently. Colour temperature
+    runs linearly from 2700 K (warmest these bulbs do) to 6500 K (coolest) across the whole five
+    minutes. The tuya_local bulbs have no native transition (supported_features 4 = flash only),
+    so the ramp is stepped every 5 s, with timing taken from the clock rather than counted delays.
+    Turning Master Bedroom 1 off mid-ramp (e.g. the group switch) stops it.
+  icon: mdi:weather-sunset-up
+  mode: restart
+  variables:
+    bulbs:
+      - light.master_bedroom_1
+      - light.master_bedroom_2
+      - light.master_bedroom_3
+      - light.tiggy_light
+      - light.tizzy_light
+      - light.bed_light
+    start: "{{ as_timestamp(now()) }}"
+  sequence:
+    - repeat:
+        sequence:
+          - variables:
+              t: "{{ [as_timestamp(now()) - start, 300] | min }}"
+              lit: "{{ bulbs[:([(t // 10) | int + 1, bulbs | count] | min)] }}"
+              f: "{{ ((t - 60) / 240) if t >= 60 else 0 }}"
+          - action: light.turn_on
+            target:
+              entity_id: "{{ lit }}"
+            data:
+              brightness: "{{ (3 + 252 * f * f) | round(0) | int }}"
+              color_temp_kelvin: "{{ (2700 + 3800 * t / 300) | round(0) | int }}"
+          - delay:
+              seconds: 5
+        until:
+          - condition: template
+            value_template: >-
+              {{ as_timestamp(now()) - start >= 300
+                 or (as_timestamp(now()) - start > 20 and is_state('light.master_bedroom_1', 'off')) }}
+    - alias: Only finish at full brightness if nobody switched the lights off mid-ramp
+      condition: state
+      entity_id: light.master_bedroom_1
+      state: "on"
+    - action: light.turn_on
+      target:
+        entity_id: "{{ bulbs }}"
+      data:
+        brightness: 255
+        color_temp_kelvin: 6500
