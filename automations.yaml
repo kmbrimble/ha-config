@@ -1042,3 +1042,46 @@
           value_template: '{{ repeat.index >= 5 }}'
   mode: single
   max_exceeded: silent
+- id: wallpanel_motion_snapshot
+  alias: WallPanel - Motion snapshot to iPhone
+  description: 'When the WallPanel tablet''s camera sees motion, save two frames from
+    camera.wallpanel (MJPEG from the WallPanel app, http://192.168.0.52:2971/camera/stream)
+    to /media/wallpanel/ - one at the trigger and one a second later - and push
+    each to Kieren''s iPhone 17 as its own notification, grouped together. The
+    motion sensor holds on for 30s, so mode single is enough to stop repeats.
+    Files are served to the phone as /media/local/wallpanel/... (media_source, auth
+    required). iOS groups on top-level `group` (mapped to thread-id by the app).'
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.my_wall_panel_motion_detected_2
+    to: 'on'
+  conditions: []
+  variables:
+    stamp: '{{ now().strftime(''%Y%m%d-%H%M%S'') }}'
+  actions:
+  - action: camera.snapshot
+    target:
+      entity_id: camera.wallpanel
+    data:
+      filename: /media/wallpanel/{{ stamp }}-trigger.jpg
+  - delay: 00:00:01
+  - action: camera.snapshot
+    target:
+      entity_id: camera.wallpanel
+    data:
+      filename: /media/wallpanel/{{ stamp }}-plus1s.jpg
+  - action: notify.mobile_app_kierens_iphone_17
+    data:
+      title: WallPanel motion
+      message: Motion at {{ now().strftime('%-I:%M:%S %p') }} (+1s)
+      data:
+        image: /media/local/wallpanel/{{ stamp }}-plus1s.jpg
+        group: wallpanel-motion
+  - action: notify.mobile_app_kierens_iphone_17
+    data:
+      title: WallPanel motion
+      message: Trigger frame
+      data:
+        image: /media/local/wallpanel/{{ stamp }}-trigger.jpg
+        group: wallpanel-motion
+  mode: single
