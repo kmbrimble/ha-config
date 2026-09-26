@@ -1,0 +1,21 @@
+# WallPanel motion snapshots — retention
+#
+# automation.wallpanel_motion_snapshot_to_iphone (automations.yaml) writes one
+# folder per motion event under /media/wallpanel/<YYYYmmdd-HHMMSS>/. The nightly
+# automation "WallPanel - Prune motion snapshots" (also in automations.yaml, so
+# it stays UI-editable) calls this command. Only the command lives here, because
+# shell_command cannot be created in the UI.
+#
+# Deletes files older than `minutes` (default 43200 = 30 days, the retention
+# Kieren chose 27 Sep 2026), then event folders left empty for over an hour. An
+# emptied folder's mtime is bumped by the deletion, so it goes on the following
+# night's run. The 60-minute floor stops it racing a folder that camera.snapshot
+# has just created.
+#
+# Templated, so HA runs it without a shell: one command only, no pipes or `;`.
+# `-a` binds tighter than `-o`, so no parentheses are needed.
+shell_command:
+  prune_wallpanel_snapshots: >-
+    find /media/wallpanel -mindepth 1
+    -type f -mmin +{{ minutes | default(43200) | int }} -delete
+    -o -type d -empty -mmin +60 -delete
