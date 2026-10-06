@@ -2,20 +2,27 @@
 # keep-forever, full-resolution history store. Server side: unraid-ops influxdb/README.md.
 #
 # The CONNECTION is a UI config entry (created over the config-flow API 2026-10-06), not YAML.
-# Do not add host/token/bucket keys here: they would be re-imported and raise a "deprecated YAML"
-# repair. Only the options HA still reads from YAML belong in this file (filters, tags, retries).
+# Do not add host/username/database keys here: they would be re-imported and raise a "deprecated
+# YAML" repair. Only the options HA still reads from YAML belong in this file (filters, tags, retries).
+#
+# The entry deliberately uses the InfluxDB **1.x API** ("configure_v1": database "homeassistant",
+# a v1-compatibility user on the InfluxDB 2 server, DBRP mapping homeassistant/autogen -> the
+# bucket), NOT the 2.x token API. Reason: max_retries only works there. Both tested 2026-10-06 on
+# HA 2026.9.3 by stopping InfluxDB for 75 s with max_retries: 30:
+#   - 2.x API entry: every write in the window lost, nothing logged. get_influx_connection()
+#     switches the v2 client to write_api(write_options=ASYNCHRONOUS), so write errors never reach
+#     InfluxThread.write_to_influxdb() and its retry loop never runs (same on core `dev` that day).
+#   - 1.x API entry: no gap; the queued points were written, with their original timestamps, once
+#     InfluxDB came back.
+# Do not "modernise" the entry to the 2.x API without re-running that test.
 #
 # No include/exclude on purpose: every entity is recorded.
 #
-# max_retries: INERT ON THIS SETUP, kept deliberately. Tested 2026-10-06 on HA 2026.9.3: with this
-# set to 30 and the entry reloaded, InfluxDB was stopped for 75 s and every write in that window was
-# lost, with nothing in the HA log. Cause: for api_version 2, get_influx_connection() switches the
-# client to write_api(write_options=ASYNCHRONOUS) after its test write, so write errors never reach
-# InfluxThread.write_to_influxdb() and its retry loop never runs (same code on core `dev` that day).
-# The retry loop does work on the v1 client, which writes synchronously. So today any InfluxDB
-# downtime (weekly appdata backup stop, container update) is a gap in the data. Re-test before
-# relying on it; if HA makes the v2 write synchronous this starts working with no change here
-# (20 s between tries, queue kept 30 s + max_retries x 20 s, so 30 = about 10 minutes).
+# max_retries: a failed write is retried every 20 s and queued events are kept for
+# 30 s + max_retries x 20 s, so 30 rides out an InfluxDB outage of about 10 minutes (the weekly
+# appdata backup stops the container while it is archived; container updates). Longer outages
+# still lose data. Raise it if the backup archive of the InfluxDB appdata grows towards 10 minutes.
+# Cost: if InfluxDB is down when HA stops, shutdown can wait on the retry loop.
 #
 # YAML options apply on a reload of the InfluxDB config entry (async_setup_entry re-reads YAML).
 influxdb:
