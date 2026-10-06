@@ -1,0 +1,22 @@
+# InfluxDB 2.x on unRAID (http://192.168.0.10:8086, org "home", bucket "homeassistant") is the
+# keep-forever, full-resolution history store. Server side: unraid-ops influxdb/README.md.
+#
+# The CONNECTION is a UI config entry (created over the config-flow API 2026-10-06), not YAML.
+# Do not add host/token/bucket keys here: they would be re-imported and raise a "deprecated YAML"
+# repair. Only the options HA still reads from YAML belong in this file (filters, tags, retries).
+#
+# No include/exclude on purpose: every entity is recorded.
+#
+# max_retries: INERT ON THIS SETUP, kept deliberately. Tested 2026-10-06 on HA 2026.9.3: with this
+# set to 30 and the entry reloaded, InfluxDB was stopped for 75 s and every write in that window was
+# lost, with nothing in the HA log. Cause: for api_version 2, get_influx_connection() switches the
+# client to write_api(write_options=ASYNCHRONOUS) after its test write, so write errors never reach
+# InfluxThread.write_to_influxdb() and its retry loop never runs (same code on core `dev` that day).
+# The retry loop does work on the v1 client, which writes synchronously. So today any InfluxDB
+# downtime (weekly appdata backup stop, container update) is a gap in the data. Re-test before
+# relying on it; if HA makes the v2 write synchronous this starts working with no change here
+# (20 s between tries, queue kept 30 s + max_retries x 20 s, so 30 = about 10 minutes).
+#
+# YAML options apply on a reload of the InfluxDB config entry (async_setup_entry re-reads YAML).
+influxdb:
+  max_retries: 30
