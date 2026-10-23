@@ -101,7 +101,19 @@ const IN_CONDITIONAL = `
 async function openDashboard(page, urlPath) {
   const consoleErrors = [];
   page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
+    if (msg.type() !== 'error') return;
+    // A failed network request logs only "Failed to load resource: ... status of 400", with no
+    // hint which resource. The URL is on the message location, so append its path (no query
+    // string: camera and HLS URLs carry auth tokens) - otherwise a justified ignore for one
+    // endpoint cannot be told apart from a genuine failure of another.
+    let where = '';
+    try {
+      const { url } = msg.location();
+      if (url) where = ` [${new URL(url).pathname}]`;
+    } catch {
+      // location() can be empty for script errors; the bare text is then all there is.
+    }
+    consoleErrors.push(msg.text() + where);
   });
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
 

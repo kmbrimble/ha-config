@@ -29,7 +29,7 @@ frontend:
   # not referenced by a card's `type:`, so losing a race just delays their effect rather than
   # failing a card. Custom CARDS must go under `lovelace: resources:` below.
   extra_module_url:
-    - /hacsfiles/kiosk-mode/kiosk-mode.js?v=1
+    - /hacsfiles/kiosk-mode/kiosk-mode.js?v=2
     # card-mod stays HERE, not under `lovelace: resources:`. It is a global frontend patch like
     # kiosk-mode, not a card type. Moving it to resources on 2026-08-22 left the Kiosk layout
     # bistable — scrollWidth 3456 (overflowing the 3440 display) on some loads and a wrong
