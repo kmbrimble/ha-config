@@ -25,7 +25,7 @@
 #
 # So the probe cannot look at entity state — it has to look at the BYTES. It
 # fetches one camera through HA's own camera proxy (the same path the dashboards
-# use) and checks for the JPEG magic number FF D8 FF. The login page starts with
+# use) and checks for the JPEG magic number FF D8 FF (tools/blueiris_stream_check.py). The login page starts with
 # "<!D", so a stale session reads as `off`.
 #
 # All seven Blue Iris cameras share one session, so probing one covers them all.
@@ -45,8 +45,13 @@ command_line:
       command_timeout: 10
       payload_on: ok
       payload_off: bad
-      command: >-
-        python3 -c "import urllib.request; print('ok' if
-        urllib.request.urlopen('http://127.0.0.1:8123{{ state_attr('camera.cameras_subfront',
-        'entity_picture') }}', timeout=8).read(3) == b'\xff\xd8\xff' else 'bad')"
-        2>/dev/null || echo bad
+      # Only the ARGUMENTS are templated, and the assembled command must contain none of
+      #   | & ; < > ( ) $ ` * ? [ ] { } ~ #  or a newline - HA (2026.10+) checks the rendered
+      # command for those, runs it without a shell, and from 2027.4.0 stops tolerating them
+      # (repair "Command with a template uses shell features"). That is why this passes the
+      # camera id and just the access TOKEN (64 hex chars): the full entity_picture
+      # (`/api/camera_proxy/<id>?token=...`) contains a `?` and would re-raise the repair.
+      # The script builds the URL itself and always prints ok|bad, so the fail-closed
+      # fallback that used to be `|| echo bad` lives there. If the camera is unavailable the
+      # template renders empty, the token argument is missing, and the script reads `bad`.
+      command: "python3 /config/tools/blueiris_stream_check.py camera.cameras_subfront {{ (state_attr('camera.cameras_subfront', 'entity_picture') or '').split('token=')[-1] }}"
