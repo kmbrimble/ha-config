@@ -5,7 +5,7 @@ views:
 - title: Main
   path: main
   type: panel
-  theme: catppuccin-mocha
+  theme: Catppuccin Mocha
   cards:
   - type: horizontal-stack
     card_mod:
