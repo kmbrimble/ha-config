@@ -18,6 +18,13 @@ const BASELINE_DIR = path.join(__dirname, 'baselines');
 const IGNORED_CONSOLE = [
   /Failed to load resource.*camera_proxy/i, // camera thumbnails 404 while a stream is down
   /ERR_INTERNET_DISCONNECTED/i,
+  // HA's stream component answers a low-latency HLS blocking-reload request with 400 when the
+  // client asks for a part beyond its advance-part limit (stream/hls.py, HlsPlaylistView: "the
+  // server SHOULD immediately return Bad Request" per the LL-HLS spec). hls.js does this
+  // routinely while a stream warms up, in bursts of one per camera, on roughly every other page
+  // load. Only a 400 on the playlist endpoint is ignored: a 404/500 there, or a 400 anywhere
+  // else, still fails the suite.
+  /Failed to load resource: .*status of 400.*\[\/api\/hls\/[^/]+\/playlist\.m3u8\]/i,
 ];
 
 // Pre-existing defects that fire on every dashboard, including known-good ones. These are NOT

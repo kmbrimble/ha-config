@@ -773,7 +773,17 @@ frontend:
 **If kiosk-mode is ever updated via HACS, bump the `?v=1` query string** — this is the
 documented cache-busting mechanism; without it, HA/the browser can keep serving the old cached
 module after an update. If header-hiding silently breaks again after a kiosk-mode update, check
-this version string first before assuming a config regression.
+this version string first before assuming a config regression. HACS serves `/hacsfiles/*` with
+`Cache-Control: max-age=2678400` (31 days), so without the bump the real Kiosk PC keeps running
+the old module; a fresh Playwright browser has an empty cache and sees the new one at once.
+
+**kiosk-mode must be v15+ on HA 2026.10.1 or later (updated 2026-10-23, `?v=2`).** HA 2026.10.1
+moved an `ha-icon-button`'s title into the button inside its `ha-button`; kiosk-mode v14 read
+`aria-label` off that element and threw `Cannot read properties of null (reading 'trim')` on every
+load, which failed the first Playwright test on both kiosk dashboards. v15.0.0 is the fix (its
+release notes say not to install it on an older HA). Update via the HACS websocket command
+`hacs/repository/download` with `{repository: <id>, version: "vX.Y.Z"}` inside `deploy_lock.py
+run`, back up `www/community/kiosk-mode/` first, then bump `?v=` and restart.
 
 ## Where a frontend module goes: `resources:` vs `extra_module_url`
 

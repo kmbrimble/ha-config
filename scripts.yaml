@@ -53,40 +53,40 @@ stop_all_blinds:
   icon: mdi:stop
 open_car_doors:
   sequence:
-  - action: button.press
+  - action: script.turn_on
     metadata: {}
     data: {}
     target:
-      entity_id: button.caropen
+      entity_id: script.car_open
   alias: Open Car Doors
-  description: ''
+  description: Starts script.car_open and returns at once (the old button.caropen no longer exists).
 close_car_doors:
   sequence:
-  - action: button.press
+  - action: script.turn_on
     metadata: {}
     data: {}
     target:
-      entity_id: button.carclose
+      entity_id: script.car_close
   alias: Close Car Doors
-  description: ''
+  description: Starts script.car_close and returns at once (the old button.carclose no longer exists).
 open_bike_doors:
   sequence:
-  - action: button.press
+  - action: script.turn_on
     metadata: {}
     data: {}
     target:
-      entity_id: button.bikeopen
+      entity_id: script.bike_open
   alias: Open Bike Doors
-  description: ''
+  description: Starts script.bike_open and returns at once (the old button.bikeopen no longer exists).
 close_bike_doors:
   sequence:
-  - action: button.press
+  - action: script.turn_on
     metadata: {}
     data: {}
     target:
-      entity_id: button.bikeclose
+      entity_id: script.bike_close
   alias: Close Bike Doors
-  description: ''
+  description: Starts script.bike_close and returns at once (the old button.bikeclose no longer exists).
 carport_door:
   alias: "Carport Door"
   sequence:
