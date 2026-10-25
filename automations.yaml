@@ -957,16 +957,24 @@
     last 3 minutes. Two or more is treated as a burst worth recovering from. Reuses
     button.kiosk_kioskfirefoxrestart - the same HASS.Agent/MQTT button kiosk_browser_watchdog
     uses - which forces a fresh page load and makes the kiosk renegotiate its WebRTC
-    connections. At least 10 minutes between presses so a stretch of ongoing churn
-    does not restart the kiosk browser every 3 minutes.'
+    connections. Tuned 26 Oct 2026: 2+ EOFs per 3 minutes is routine
+    noise (it was restarting the kiosk 20+ times a day), so the browser is now only restarted
+    when 2+ EOFs persist for 9 minutes (3 consecutive polls) or a single poll sees more than
+    20, with at least 30 minutes between presses.'
   triggers:
   - trigger: numeric_state
     entity_id: sensor.go2rtc_substream_eof_bursts
     above: 1
+    for: 00:09:00
+    id: sustained
+  - trigger: numeric_state
+    entity_id: sensor.go2rtc_substream_eof_bursts
+    above: 20
+    id: large_burst
   conditions:
   - condition: template
     value_template: '{{ this.attributes.last_triggered is none or (now() - this.attributes.last_triggered).total_seconds()
-      > 600 }}'
+      > 1800 }}'
   actions:
   - action: button.press
     target:
