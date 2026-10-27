@@ -14,7 +14,7 @@ views:
         div#root { margin: 0 !important; padding: 0 !important; gap: 0 !important; }
     cards:
     - type: iframe
-      url: http://magicmirror.kiztigs.com/?v=2
+      url: http://192.168.0.25:8080/?v=2
       card_mod:
         style: |
           :host { width: 1720px !important; flex: 0 0 1720px !important; margin: 0 !important; height: 100vh !important; }
