@@ -26,13 +26,18 @@
 #   connected — the websocket stays up fine while the video freezes.
 #
 # So this probe looks at the one place the problem actually shows up: HA's own
-# `system_log`. `tools/go2rtc_eof_check.py` calls `system_log/list` over HA's
-# local websocket API (127.0.0.1:8123, same host go2rtc itself runs on) and
-# counts how many NEW go2rtc EOF entries for these five streams have appeared
-# since the last check (HA dedupes log entries into one object with a running
-# `count`, so the script keeps a small state file to turn that cumulative
-# total into a per-interval delta). A burst of 2+ in one 3-minute window is
-# the signal the automation acts on.
+# log. `tools/go2rtc_eof_check.py` tails /config/home-assistant.log (read-only,
+# from a saved byte offset) and counts the NEW lines that are a go2rtc WARNING
+# naming one of these five streams, or a per-camera `stream` worker error. A
+# burst of 2+ in one 3-minute window is the signal the automation acts on.
+#
+# History: until 28 Oct 2026 it read `system_log/list` instead. That dedupes
+# to one cumulative `count` per source and keeps only 5 distinct messages, and
+# the old script added the whole running total whenever any retained message
+# named a sub camera - so the sensor read 67 ... 496 "per 3 minutes" and the
+# watchdog restarted the kiosk's Firefox for no reason. The frontgate stream
+# (about 11 EOFs/hour, ~30/hour in daylight) shares that source and is
+# deliberately NOT counted here.
 #
 # Deliberately modelled on packages/blueiris_stream_watchdog.yaml's shape.
 
