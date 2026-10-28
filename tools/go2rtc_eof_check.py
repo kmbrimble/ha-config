@@ -25,7 +25,7 @@ ONE object per source with a cumulative `count` and keeps only its last 5 distin
 messages. The old script added that whole cumulative count whenever any of the 5
 retained messages named a sub camera, so the total jumped by hundreds whenever such a
 message appeared, and fell again when it rotated out. A dominant `frontgate` EOF stream
-(about 11/hour, ~30/hour in daylight) shared that entry, so the sensor read 67, 133 ...
+(about 10-13 per hour by day, almost none overnight) shared that entry, so the sensor read 67, 133 ...
 496 "reconnects in 3 minutes" and the watchdog restarted the kiosk's Firefox 13 times in
 two days for nothing. Counting individual log lines avoids all of that, and `frontgate`
 (deliberately NOT in SUB_CAMERAS) can no longer inflate the number.

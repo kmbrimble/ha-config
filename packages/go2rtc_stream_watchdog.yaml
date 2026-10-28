@@ -36,7 +36,7 @@
 # the old script added the whole running total whenever any retained message
 # named a sub camera - so the sensor read 67 ... 496 "per 3 minutes" and the
 # watchdog restarted the kiosk's Firefox for no reason. The frontgate stream
-# (about 11 EOFs/hour, ~30/hour in daylight) shares that source and is
+# (about 10-13 EOFs/hour in daylight, almost none overnight) shares that source and is
 # deliberately NOT counted here.
 #
 # Deliberately modelled on packages/blueiris_stream_watchdog.yaml's shape.
