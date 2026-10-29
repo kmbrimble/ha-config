@@ -67,7 +67,7 @@ the deploy step.
 ├── packages/                   # fuel_price_trends.yaml, wallpanel_motion_alert.yaml
 ├── tools/haws.py               # stdlib-only HA websocket client (Rule 0)
 ├── tools/deploy_lock.py        # deploy lock, and the only sanctioned copy onto live HA
-├── tools/garagepi/             # zeversolar_mqtt.py (+ test); the copy deployed on garagepi
+├── tools/garagepi/             # zeversolar_mqtt.py (+ test), relay_mqtt.py + .service; the copies deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
 ├── backups/                    # timestamped pre-change copies
@@ -878,6 +878,12 @@ Mosquitto (unRAID, `192.168.0.10:1883`) currently has `allow_anonymous true`, an
 client is anonymous**. Checked read-only 2026-10-30: none of the 78 `New client connected`
 lines in its log carries a username. unraid-ops#36 proposes turning anonymous access off, which
 breaks all of them at once, so each must be given credentials first. Inventory is on that issue.
+
+`tools/garagepi/relay_mqtt.py` (the Garage Remote relay, `relay_mqtt.service`, client id `relay_mqtt`) is the
+other one, and the only one live: it reads `MQTT_USER` / `MQTT_PASS` the same way, and its unit already has
+`EnvironmentFile=-/etc/relay-mqtt.env` (the `-` makes the file optional until credentials exist). It retries
+its first connect forever (it failed for good on the 25 Oct boot, when Wi-Fi came up ~6 min after boot).
+`pi_mqtt_gpio` was disabled on 2026-10-30 (never connected; no consumers), so it is not a client to migrate.
 
 `tools/garagepi/zeversolar_mqtt.py` reads `MQTT_USER` / `MQTT_PASS` from the environment with
 **no default**, so unset means anonymous (`username_pw_set` is only called when both are set).

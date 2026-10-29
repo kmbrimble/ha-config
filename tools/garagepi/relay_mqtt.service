@@ -1,0 +1,15 @@
+[Unit]
+Description=Garage Remote MQTT Relay Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/dietpi/garageremote/relay_mqtt.py
+Restart=always
+RestartSec=10
+User=dietpi
+# Optional (leading "-"): MQTT_USER / MQTT_PASS once unraid-ops#36 turns anonymous access off. Root-only, mode 0600.
+EnvironmentFile=-/etc/relay-mqtt.env
+
+[Install]
+WantedBy=multi-user.target
