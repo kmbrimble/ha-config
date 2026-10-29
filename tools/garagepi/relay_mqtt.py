@@ -49,6 +49,7 @@ if os.environ.get("MQTT_USER") and os.environ.get("MQTT_PASS"):
     client.username_pw_set(os.environ["MQTT_USER"], os.environ["MQTT_PASS"])
 client.on_connect = on_connect
 client.on_message = on_message
+client.on_connect_fail = lambda client, userdata: print("mqtt connect failed, retrying", flush=True)
 # Wi-Fi can be minutes behind boot; retry the first connect forever (paho backs off 1 -> 120 s).
 client.connect_async(MQTT_BROKER, 1883, 60)
 client.loop_forever(retry_first_connection=True)
