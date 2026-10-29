@@ -22,9 +22,11 @@ for pin in relay_pins:
 
 def trigger_relay(index):
     pin = relay_pins[index]
+    print(f"relay {names[index]}: BCM {pin} LOW (pulse start)", flush=True)
     GPIO.output(pin, GPIO.LOW)
     time.sleep(1)
     GPIO.output(pin, GPIO.HIGH)
+    print(f"relay {names[index]}: BCM {pin} HIGH (pulse end)", flush=True)
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -38,6 +40,7 @@ def on_message(client, userdata, msg):
         return
     for i, name in enumerate(names):
         if msg.topic == f"{TOPIC_PREFIX}/{name.replace(' ', '_')}":
+            print(f"message on {msg.topic}", flush=True)
             trigger_relay(i)
 
 
