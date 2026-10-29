@@ -885,6 +885,12 @@ other one, and the only one live: it reads `MQTT_USER` / `MQTT_PASS` the same wa
 its first connect forever (it failed for good on the 25 Oct boot, when Wi-Fi came up ~6 min after boot).
 `pi_mqtt_gpio` was disabled on 2026-10-30 (never connected; no consumers), so it is not a client to migrate.
 
+garagepi is also the NUT host for the garage UPS. `tools/garagepi/upsd.conf` (deployed to `/etc/nut/upsd.conf`,
+root:nut 0640) is a single `LISTEN 0.0.0.0 3493`. It was `LISTEN 127.0.0.1` plus `LISTEN 192.168.0.15`, and on
+30 Oct 2026 upsd lost a boot race (`not listening on 192.168.0.15`, the address not yet usable), so HA's
+`sensor.garage_*` stayed `unavailable` after a reboot. A wildcard bind cannot coexist with a 127.0.0.1 line on the same
+port (upsd then binds only the loopback), so it must be the only LISTEN line.
+
 `tools/garagepi/zeversolar_mqtt.py` reads `MQTT_USER` / `MQTT_PASS` from the environment with
 **no default**, so unset means anonymous (`username_pw_set` is only called when both are set).
 Neither `zeversolar-mqtt.service` (`/etc/systemd/system/`, `User=dietpi`) nor any `zever-bridge`
