@@ -137,6 +137,13 @@ recorder:
 logger:
   logs:
     custom_components.nectr: info
+  # Blue Iris 6.0.8.6 drops go2rtc's frontgate RTSP session ~10-13/h by day (its 455 keepalive
+  # reply corrupts the interleaved stream); go2rtc reconnects in ~1 s. Hide only that line.
+  # Sub-camera EOFs stay visible - tools/go2rtc_eof_check.py counts them from the log.
+  # See claude/blue-iris-restream-session-drops-onset.md. Filters need a restart to change.
+  filters:
+    homeassistant.components.go2rtc.server:
+      - 'error=EOF url=ffmpeg:rtsp://.*:81/frontgate\s*$'
   
 template:
   - trigger:
