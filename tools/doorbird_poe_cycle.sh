@@ -5,17 +5,21 @@
 # (192.168.0.2), PoE class 3, ~2.5 W. No PoE schedule or time-range is configured on any
 # port, so the switch is NOT what restarts the device at ~1 am each night.
 #
-# Credentials come from /projects/unraid-ops/.env (SWITCH_HOST/SWITCH_USER/SWITCH_PASS) —
-# switch access belongs to the unraid-ops project; this script only borrows it.
+# Credentials come from unraid-secretsman via `hl` (switch/admin_user, switch/admin_password); the
+# script re-runs itself under `hl exec` if SWITCH_PASS is not already set. The host comes from the
+# registry entry `tplink-switch`. Switch access belongs to the unraid-ops project; this only borrows it.
 # Nothing is written to startup-config, so a switch reboot restores the port to enabled.
 #
 # Usage: doorbird_poe_cycle.sh [off-seconds, default 15]
 set -u
 OFF_SECONDS="${1:-15}"
 DRY_RUN="${DRY_RUN:-0}"          # 1 = run the same CLI path but never actually cut power
-set -a; . /projects/unraid-ops/.env; set +a
-# NB: .env defines PORT for something else, so the switch port has its own name and is
-# read AFTER the .env is sourced. Getting this wrong silently pointed the CLI at "8765".
+if [ -z "${SWITCH_USER:-}" ] || [ -z "${SWITCH_PASS:-}" ]; then
+  exec hl exec --secret SWITCH_USER=switch/admin_user --secret SWITCH_PASS=switch/admin_password -- "$0" "$@"
+fi
+SWITCH_HOST="${SWITCH_HOST:-$(hl show tplink-switch | awk '/^address:/{print $2}')}"
+# NB: unraid-ops' old .env defined PORT for something else, so the switch port keeps its own name
+# (SW_PORT). Getting this wrong silently pointed the CLI at "8765".
 SW_PORT="${SW_PORT:-two-gigabitEthernet 1/0/1}"
 SSHOPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 \
  -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa \
@@ -27,7 +31,7 @@ run_cli() {
     sleep 3
     for c in "$@"; do printf '%s\r' "$c"; sleep 2; printf ' '; sleep 1; done
     sleep 2; printf 'logout\r'; sleep 2
-  } | timeout 180 sshpass -p "$SWITCH_PASS" ssh -tt $SSHOPTS "$SWITCH_USER@$SWITCH_HOST" 2>&1 \
+  } | timeout 180 SSHPASS="$SWITCH_PASS" sshpass -e ssh -tt $SSHOPTS "$SWITCH_USER@$SWITCH_HOST" 2>&1 \
     | tr -d '\r' | sed 's/\x1b\[[0-9;]*[A-Za-z]//g'
 }
 

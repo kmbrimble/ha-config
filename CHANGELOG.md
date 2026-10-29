@@ -10,6 +10,10 @@
 MCP for reads, and the write-gated `call_service` for service calls. `.gitignore` now also covers
 `.env.retired-*`.
 
+`tools/doorbird_poe_cycle.sh` no longer sources `/projects/unraid-ops/.env`: it re-runs itself under
+`hl exec` for `SWITCH_USER`/`SWITCH_PASS` (`switch/admin_user`, `switch/admin_password`), reads the host
+from the `tplink-switch` registry entry, and passes the password to `sshpass -e` rather than `-p`.
+
 ### Fixed the Kiosk energy chart's column/label misalignment, and switched labels to day letters
 The daily columns sat about 12 hours away from the date number printed under them, and the last
 tick/label sometimes had no column under it at all. Root cause: apexcharts-card always forces the
