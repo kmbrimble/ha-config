@@ -67,6 +67,7 @@ the deploy step.
 ├── packages/                   # fuel_price_trends.yaml, wallpanel_motion_alert.yaml
 ├── tools/haws.py               # stdlib-only HA websocket client (Rule 0)
 ├── tools/deploy_lock.py        # deploy lock, and the only sanctioned copy onto live HA
+├── tools/garagepi/             # zeversolar_mqtt.py (+ test); the copy deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
 ├── backups/                    # timestamped pre-change copies
@@ -870,6 +871,34 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   authenticates via `trusted_networks` on `192.168.0.16` with `allow_bypass_login`. This is why
   the live Kiosk dashboard must never be left in a broken state — there is no login screen to
   interrupt a bad load.
+
+## garagepi MQTT clients and the anonymous-access dependency
+
+Mosquitto (unRAID, `192.168.0.10:1883`) currently has `allow_anonymous true`, and **every
+client is anonymous**. Checked read-only 2026-10-30: none of the 78 `New client connected`
+lines in its log carries a username. unraid-ops#36 proposes turning anonymous access off, which
+breaks all of them at once, so each must be given credentials first. Inventory is on that issue.
+
+`tools/garagepi/zeversolar_mqtt.py` reads `MQTT_USER` / `MQTT_PASS` from the environment with
+**no default**, so unset means anonymous (`username_pw_set` is only called when both are set).
+Neither `zeversolar-mqtt.service` (`/etc/systemd/system/`, `User=dietpi`) nor any `zever-bridge`
+unit sets `Environment=` or `EnvironmentFile=`. On 2026-10-30 `zeversolar-mqtt` was
+`disabled`/`inactive` and no `zever-bridge.service` existed on garagepi at all, so the script is
+not publishing today; it would be anonymous if started.
+
+When auth is turned on, the credentials for it come from:
+
+- values in unraid-secretsman, set and read with `hl` (never typed into a unit file by hand from
+  memory, never in this repo);
+- a **root-only systemd `EnvironmentFile=`** on garagepi (e.g. `/etc/zeversolar-mqtt.env`, mode
+  `0600`, owner root) holding `MQTT_USER=` and `MQTT_PASS=`, referenced from the unit with
+  `EnvironmentFile=`. systemd reads it as root before dropping to `User=dietpi`, so the service
+  account never needs read access to the file. Not `Environment=` in the unit (world-readable via
+  `systemctl show`).
+
+`esphome-zeversolar/docs/DESIGN.md` plans to retire `zeversolar_mqtt.py`, `zeversolar-mqtt.service`
+and `zever-bridge.service` (the ESP32 reads the inverter directly). If that lands first, delete
+this script rather than wiring up credentials for it.
 
 ## Reading the HA error log
 
