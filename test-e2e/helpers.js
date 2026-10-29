@@ -4,17 +4,12 @@ const path = require('path');
 const HA_URL = process.env.HA_URL || 'http://192.168.0.21:8123';
 
 /**
- * Read HA_TOKEN from the environment, falling back to .env so `npx playwright test` works
- * without a wrapper. The token is never logged — only its presence is ever reported.
+ * Read HA_TOKEN from the environment. Run the suite under `hl exec --endpoint home-assistant --`
+ * (CLAUDE.md, Rule 0) so the token is injected from unraid-secretsman. It is never logged.
  */
 function haToken() {
   if (process.env.HA_TOKEN) return process.env.HA_TOKEN;
-  const envFile = path.join(__dirname, '..', '.env');
-  if (fs.existsSync(envFile)) {
-    const line = fs.readFileSync(envFile, 'utf8').split('\n').find((l) => l.startsWith('HA_TOKEN='));
-    if (line) return line.slice('HA_TOKEN='.length).trim().replace(/^["']|["']$/g, '');
-  }
-  throw new Error('HA_TOKEN not set and not found in .env — see CLAUDE.md, Authentication for the test browser');
+  throw new Error('HA_TOKEN not set — run under `hl exec --endpoint home-assistant -- ...`, see CLAUDE.md Rule 0');
 }
 
 /**

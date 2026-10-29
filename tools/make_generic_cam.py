@@ -1,7 +1,7 @@
 """Create a Generic camera config entry for a Blue Iris RTSP restream, via HA's config-flow API.
 
-Usage: make_generic_cam.py <bi_short_name>
-Reads HA_TOKEN, BI_USER, BI_PASS from the environment (see .env). Prints the new entry.
+Usage: hl exec --endpoint home-assistant --secret BI_USER=blueiris/user --secret BI_PASS=blueiris/password -- python3 tools/make_generic_cam.py <bi_short_name>
+Reads HA_TOKEN, BI_USER, BI_PASS from the environment. Prints the new entry.
 """
 import json, os, sys, urllib.error, urllib.request
 

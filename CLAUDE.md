@@ -13,20 +13,25 @@ Deploy and verify section carefully before changing anything.
 
 ## Rule 0 — talk to HA over the API, never the browser
 
-A long-lived access token is in `/projects/ha-config/.env` as `HA_TOKEN` (gitignored) and this
-container reaches HA directly. **Do not** use browser automation (Claude in Chrome, the in-app
+The long-lived access token lives in unraid-secretsman (`ha/token`), not in this repo. **Never source
+or create a `.env`**: wrap any command that needs it in `hl exec --endpoint home-assistant --`, which
+injects `HA_TOKEN` and scrubs it from output (`hl` is `/projects/homelab-access/bin/hl` if not on
+PATH; see the `homelab-access` skill). This container reaches HA directly. **Do not** use browser automation (Claude in Chrome, the in-app
 browser, Playwright ad hoc) to read state, call services, inspect logs or check config — every
 browser access costs the user a manual approval. Load the token and use curl/websocket instead:
 
 ```bash
-set -a; . /projects/ha-config/.env; set +a
-# REST
-curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/states | jq .
-curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" \
-  -d '{"entity_id":"light.x"}' http://192.168.0.21:8123/api/services/light/turn_on
+# REST ($HA_TOKEN is expanded by the inner shell, so it never reaches argv of hl itself)
+hl exec --endpoint home-assistant -- sh -c 'curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/states' | jq .
 # WebSocket (error log, lovelace config, entity/device registries — things REST cannot do)
-echo '[{"type":"system_log/list"}]' | python3 /projects/ha-config/tools/haws.py
+echo '[{"type":"system_log/list"}]' | hl exec --endpoint home-assistant -- python3 /projects/ha-config/tools/haws.py
 ```
+
+**Reads** can also go through the read-only `homeassistant` MCP server (ha-mcp, `READ_ONLY_MODE`).
+**Service calls** go through `/projects/homelab-access/servers/home_assistant.call_service`, which is
+write-gated (`write_allowed` plus `allow_write=True`/`HL_ALLOW_WRITE=1`) and only for changes the user
+asked for. **Config, dashboard and automation edits are unchanged**: they stay in this repo's deploy
+flow (worktree, backup, deploy lock, check_config), never via MCP or the HA editor APIs.
 
 `tools/haws.py` is a stdlib-only HA websocket client (no pip needed): it reads a JSON **array** of
 commands on stdin, authenticates, and prints one result object per command in order. Both paths
@@ -144,7 +149,7 @@ than `kiosk`/`wall`. If a future change needs a new dashboard key, it must be hy
 instance rather than guessing:
 
 ```
-curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/services \
+hl exec --endpoint home-assistant -- sh -c 'curl -s -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/services' \
   | python3 -c "import json,sys;[print(f\"{d['domain']}.{s}\") for d in json.load(sys.stdin) for s in d['services'] if 'reload' in s]"
 ```
 
@@ -188,6 +193,8 @@ above), and it no longer costs a display blink — though kiosk-mode itself live
 
 ## Test command
 
+Run every `npm run test:e2e*` command below as `hl exec --endpoint home-assistant -- npm run ...` — the suite needs `HA_TOKEN` in its environment and no longer reads a `.env`. `test:unit` needs no HA.
+
 - `npm run test:e2e` — both dashboards, against the **candidate** copies (the development loop)
 - `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
@@ -225,10 +232,10 @@ HA requires authentication. Do **not** add the unRAID host IP (`192.168.0.10`) t
 login to every container on the server.
 
 Instead, inject a long-lived access token into `localStorage` before page load. The token lives
-in `/projects/ha-config/.env` as `HA_TOKEN` (already gitignored) and is supplied via that
-environment variable — it must never be committed, and never be printed to the console/output
-(e.g. via `cat`, `echo`, `env`, or a debug print) even for verification. To check it's present
-without exposing it: `grep -q '^HA_TOKEN=' .env && echo found`.
+in unraid-secretsman (`ha/token`) and reaches the suite as the `HA_TOKEN` environment variable via
+`hl exec --endpoint home-assistant -- npm run test:e2e` — it must never be committed, and never be
+printed to the console/output (e.g. via `cat`, `echo`, `env`, or a debug print) even for
+verification. `hl secret-refs` shows whether `ha/token` resolves, without printing it.
 
 This is implemented once in `test-e2e/helpers.js` (`authenticate()`) — use it rather than
 re-injecting the token in a spec.
@@ -392,7 +399,7 @@ defines/implements X" against anything on this list belongs in `UNVERIFIABLE FRO
 | The MQTT broker, and the Emerald meter publishing `home/emerald/#` | a broker config entry plus a physical device |
 | MariaDB | a separate container |
 | TLS, the public hostname, ingress | the Cloudflare tunnel, configured in the Cloudflare dashboard |
-| `HA_TOKEN` for the test suite | `/projects/ha-config/.env`, gitignored |
+| `HA_TOKEN` for the test suite | unraid-secretsman `ha/token`, injected by `hl exec --endpoint home-assistant --` |
 | The four storage-mode dashboards and all UI helpers | `.storage/` — never hand-edited (constraint #3) |
 
 **Entity IDs cannot be derived from this repo**, and this is the trap most likely to produce a
@@ -454,8 +461,8 @@ conditional cards themselves are no longer pinned by the baseline.
    2. **Edit, then validate before reload/restart.** After editing, validate before triggering any
       reload or restart that would apply the change live. **`ha core check` is not reachable from
       this container** — no Supervisor CLI or SSH access to the HA host is configured here (confirmed
-      2026-08-21). Use the REST config-check endpoint instead, with the token from `.env`:
-      `curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/config/core/check_config`
+      2026-08-21). Use the REST config-check endpoint instead, with the token injected by `hl`:
+      `hl exec --endpoint home-assistant -- sh -c 'curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" http://192.168.0.21:8123/api/config/core/check_config'`
       — a `{"result":"valid",...}` response is the pass condition. If a future session finds `ha`
       or SSH available, prefer it and update this note.
    3. **Retry on failure, up to 3 attempts total.** If validation fails, revise the edit and
@@ -604,8 +611,7 @@ being restored, and to `www/` resources, because a dashboard YAML goes live the 
 
 ```bash
 cd /projects/.worktrees/ha-config-<slug>
-set -a; . /projects/ha-config/.env; set +a
-python3 tools/deploy_lock.py run --holder "cowork: kiosk fuel cards (ha-config-<slug>)" -- bash -c '
+hl exec --endpoint home-assistant -- python3 tools/deploy_lock.py run --holder "cowork: kiosk fuel cards (ha-config-<slug>)" -- bash -c '
   set -e
   python3 tools/deploy_lock.py push packages/foo.yaml packages/foo.yaml
   curl -sf -X POST -H "Authorization: Bearer $HA_TOKEN" \
@@ -739,7 +745,7 @@ host — there is still no shell on HA OS from here, so `ha core check` remains 
 3. Trigger the reload and verify, in the same locked section.
 4. **For the Kiosk dashboard specifically**, also refresh the physical display via the
    `browser_mod` HACS integration (installed 2026-08-29 for this purpose):
-   `curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" -d '{"browser_id": "kiosk"}' http://192.168.0.21:8123/api/services/browser_mod/refresh`
+   `hl exec --endpoint home-assistant -- sh -c 'curl -s -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" -d "{\"browser_id\": \"kiosk\"}" http://192.168.0.21:8123/api/services/browser_mod/refresh'`
    A `[]` response only means HA accepted the service call — `browser_mod` registers browser IDs
    dynamically from the connected frontend, so this doesn't confirm the Kiosk PC actually reloaded.
    WallPanel doesn't have a known `browser_mod` browser ID yet — check before assuming the same
@@ -845,7 +851,7 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   entries whose stream source is Blue Iris's RTSP restream (`rtsp://192.168.0.20:81/<short name>`,
   digest auth, the same `homeassistant` BI user). HA's built-in go2rtc serves them to the browser
   as WebRTC at the cameras' native frame rate. They are created with `tools/make_generic_cam.py`
-  (BI_USER/BI_PASS in `.env`) and renamed over the websocket entity registry. They have no still
+  (`blueiris/user` and `blueiris/password` in secretsman, injected with `hl exec --secret BI_USER=blueiris/user --secret BI_PASS=blueiris/password`) and renamed over the websocket entity registry. They have no still
   URL, so thumbnails come from go2rtc and take ~3 s.
   - This depends on Blue Iris's **streaming profile 0** (`HKLM\...\Blue Iris\encoders\streaming 0`)
     being `d2w=1` (direct-to-wire) with `gop=20`. It was `d2w=0, gop=1000` — a re-encode with a

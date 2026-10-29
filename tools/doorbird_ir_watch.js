@@ -11,7 +11,7 @@
  * only touched by the recovery attempts.
  *
  * Usage: node tools/doorbird_ir_watch.js <seconds to run> [sample interval s]
- * Needs: HA_TOKEN in /projects/ha-config/.env, and DoorBird creds in /tmp/db.env
+ * Needs: HA_TOKEN (run under `hl exec --endpoint home-assistant --`), and DoorBird creds in /tmp/db.env
  *        (DB_HOST/DB_USER/DB_PASS) or readable /ha-config/.storage/core.config_entries.
  * Log:   /tmp/dbir/irwatch.log
  */
@@ -30,7 +30,8 @@ const PRESS_FRESH_S = 240;   // automation counts as active if it pressed this r
 const env = (p) => Object.fromEntries(fs.readFileSync(p, 'utf8').split('\n')
   .filter(l => l.includes('=') && !l.trim().startsWith('#'))
   .map(l => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^["']|["']$/g, '')]; }));
-const ha = env('/projects/ha-config/.env');
+const ha = { HA_TOKEN: process.env.HA_TOKEN };
+if (!ha.HA_TOKEN) throw new Error('HA_TOKEN not set - run under `hl exec --endpoint home-assistant --`');
 let db;
 try { db = env('/tmp/db.env'); } catch {
   const e = JSON.parse(fs.readFileSync('/ha-config/.storage/core.config_entries', 'utf8'))

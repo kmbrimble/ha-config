@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Credentials now come from `hl` (unraid-secretsman), not `.env`
+`HA_TOKEN` is injected with `hl exec --endpoint home-assistant --`, and Blue Iris credentials with
+`--secret BI_USER=blueiris/user --secret BI_PASS=blueiris/password`. Env var names are unchanged.
+`test-e2e/helpers.js` no longer falls back to reading `.env`, and `tools/doorbird_ir_watch.js` takes
+`HA_TOKEN` from the environment. CLAUDE.md documents the `hl` flow, the read-only `homeassistant`
+MCP for reads, and the write-gated `call_service` for service calls. `.gitignore` now also covers
+`.env.retired-*`.
+
 ### Fixed the Kiosk energy chart's column/label misalignment, and switched labels to day letters
 The daily columns sat about 12 hours away from the date number printed under them, and the last
 tick/label sometimes had no column under it at all. Root cause: apexcharts-card always forces the

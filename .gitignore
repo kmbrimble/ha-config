@@ -5,6 +5,7 @@ secrets.yaml
 test-e2e/screenshots/
 node_modules/
 .env
+.env.retired-*
 test-results/
 playwright-report/
 
