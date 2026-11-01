@@ -74,6 +74,12 @@ lovelace:
     # so window.kioskEnergy exists before the chart's data generators run.
     - url: /local/kiosk-energy.js?v=5
       type: module
+    # Kiosk video guard (www/kiosk-video-guard.js): reloads the page when a camera <video> stops
+    # decoding frames. Loaded on every dashboard because resources are shared, but a complete
+    # no-op outside /kiosk-main (WallPanel and the rest are untouched). Nothing depends on it
+    # being awaited; it only starts a timer.
+    - url: /local/kiosk-video-guard.js?v=1
+      type: module
   dashboards:
     kiosk-main:
       mode: yaml
