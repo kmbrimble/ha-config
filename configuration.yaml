@@ -74,6 +74,18 @@ lovelace:
     # so window.kioskEnergy exists before the chart's data generators run.
     - url: /local/kiosk-energy.js?v=5
       type: module
+    # Kiosk video guard (www/kiosk-video-guard.js), v4, in ACT mode (observe-mode logs were clean for
+    # an hour on the Kiosk's Firefox 153 first). When a camera's live frame signals are all flat for
+    # 45 s it restarts just that camera's stream (detach/re-attach its ha-camera-stream), not the page.
+    # Page-reload fallback is OFF (fallbackReload: false in the file). To go back to observe-only: set
+    # `mode: 'observe'` in DEFAULTS in the file and bump ?v= here (reload_resources is enough, no HA
+    # restart), then refresh the Kiosk: the display keeps running the module it loaded.
+    # v1 was removed on 2026-11-02: Firefox reports getVideoPlaybackQuality().totalVideoFrames as 0 for
+    # MediaStream video (Mozilla bug 1586505), so every camera looked "never started" and the Kiosk was
+    # reloaded repeatedly. Loaded on every dashboard (resources are shared) but a complete no-op outside
+    # /kiosk-main.
+    - url: /local/kiosk-video-guard.js?v=4
+      type: module
   dashboards:
     kiosk-main:
       mode: yaml

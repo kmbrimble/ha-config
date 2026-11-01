@@ -70,6 +70,7 @@ the deploy step.
 ├── tools/garagepi/             # zeversolar_mqtt.py (+ test), relay_mqtt.py + .service; the copies deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
+├── www/kiosk-video-guard.js    # restarts a stalled camera stream on /kiosk-main; observe mode by default (a resource)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -200,7 +201,7 @@ Run every `npm run test:e2e*` command below as `hl exec --endpoint home-assistan
 - `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
 - `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
-- `npm run test:unit` — node unit tests in `tools/tests/` (the deploy lock and `www/kiosk-energy.js`); needs no HA
+- `npm run test:unit` — node unit tests in `tools/tests/` (the deploy lock, `www/kiosk-energy.js` and `www/kiosk-video-guard.js`); needs no HA
 
 The Playwright suite is the **only** harness that exercises HA, and it covers exactly one thing: that the two
 YAML dashboards render correctly at their display's resolution against the live HA instance.
@@ -840,6 +841,28 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
   `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
+- **Kiosk video guard (v4, ACT mode since 2026-11-02)** is `www/kiosk-video-guard.js`, a
+  `lovelace: resources:` module that is a no-op outside `/kiosk-main`. It restarts only a stalled camera
+  stream, not the page. History: v1 reloaded the page when decoded frames stopped and misfired on the
+  real Kiosk Firefox, which reports `getVideoPlaybackQuality().totalVideoFrames` as 0 for MediaStream
+  video (Mozilla bug 1586505); Chromium implements it, so the Playwright tests passed. The v2 logs showed
+  that on Firefox 153 `totalVideoFrames`, `mozDecodedFrames` and `mozParsedFrames` stay 0 while
+  `mozPaintedFrames` and `requestVideoFrameCallback` count up (~14 fps), so v3 is self-calibrating: a signal
+  counts only once it has advanced on that element, and a video is stalled when all its live signals are flat
+  for 45 s (or none ever advanced for 90 s). `currentTime` is never used.
+  - Staged rollout: v1 (page reload, misfired) -> v2 observe-only -> v3 observe with the Firefox signals (an
+    hour of clean logs on Firefox 153: no WOULD-SOFT-RESTART, `live=painted,rvfc` at ~13.8 fps on all six) -> v4 act.
+    No real freeze occurred during observation, so true-positive detection in Firefox is still unvalidated.
+  - `mode: 'observe'` never touches the DOM: logbook "Kiosk video guard (observe)" gets a summary 2 min after
+    load and every 30 min, and `WOULD-SOFT-RESTART camera.X` lines. Act mode keeps the summaries.
+  - `mode: 'act'` (shipped) detaches and re-attaches that camera's `ha-camera-stream` (HA's player closes its
+    RTCPeerConnection on disconnect and renegotiates on reconnect), with a 25 s settle, 2 min cooldown, 2 failed
+    restarts in 10 min => `ESCALATE`, and a 5 min back-off when all videos stall at once. Full page reload is
+    OFF (`fallbackReload: false`) and stays off unless deliberately enabled. Restarts log as "Kiosk video
+    guard" (`Soft-restarted camera.X ...`). The soft restart has only been exercised in Chromium, not Firefox.
+  - To go back to observe-only: edit `mode` in the file, bump `?v=`, run `lovelace.reload_resources`, then
+    refresh the Kiosk (the display keeps running the module it already loaded).
+    `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate` in both modes.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
   the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside

@@ -2,6 +2,60 @@
 
 ## [Unreleased]
 
+### Kiosk video guard v4 (`?v=4`): act mode
+After an hour of clean observe-mode logs on the real Kiosk (Firefox 153: no WOULD-SOFT-RESTART, no ESCALATE,
+`live=painted,rvfc` on all six cameras at ~13.8 fps) the shipped `mode` is now `'act'`: a camera whose live
+frame signals are all flat for 45 s (or that never started within 90 s) has just its `ha-camera-stream`
+detached and re-attached, instead of reloading the page. The page-reload fallback stays OFF
+(`fallbackReload: false`). Restarts are logged as "Kiosk video guard" (`Soft-restarted camera.X ...`).
+Not validated: no real freeze occurred in the observation window, so true-positive detection in Firefox
+and the soft restart in Firefox (only Chromium so far) are unproven. To go back to observe-only: set
+`mode: 'observe'`, bump `?v=`, reload resources, refresh the Kiosk.
+
+### Kiosk video guard v3 (`?v=3`): restarts only the stalled stream, shipped in observe mode
+v2's logs from the real Kiosk (Firefox 153) showed `totalVideoFrames`, `mozDecodedFrames` and
+`mozParsedFrames` flat at 0 on every video while `mozPaintedFrames` and `requestVideoFrameCallback` count
+up at ~14 fps. v3 uses that: a signal is "live" for an element only after it has advanced once, a video
+is stalled when it has live signals and all are flat for 45 s (never-started: nothing ever advanced for
+90 s), and `currentTime` is ignored. In `mode: 'act'` it restarts just that camera by detaching and
+re-attaching its `ha-camera-stream` in one tick (HA's `ha-web-rtc-player` closes its peer connection on
+disconnect and renegotiates on reconnect; first frame ~3 s) instead of reloading the page, which would
+reload MagicMirror, Immich, calendar/tasks, the energy chart and the climate tiles. Policy: 25 s settle,
+2 min per-camera cooldown, 2 failed restarts in 10 min => `ESCALATE` (logged; page reload only if
+`fallbackReload: true`, default off), and one round then a 5 min back-off when every video stalls at once.
+Shipped in `mode: 'observe'`: it logs `WOULD-SOFT-RESTART camera.X: flat for NN s on <signals>` and the
+summary lines (now with `mode=` and `live=`) and never touches the DOM. Switching to act mode is a
+separate step (edit `mode`, bump `?v=`). Soft restart has only been exercised in Chromium.
+
+### Kiosk video guard v2 is observe-only (`?v=2`), v1 removed
+v1 misfired on the real Kiosk Firefox: from 05:27 on 2 Nov the logbook showed "Video stalled (all six
+cameras); reloading the Kiosk page" repeatedly until the 3-per-30-min cap. Firefox returns 0 for
+`getVideoPlaybackQuality().totalVideoFrames` on MediaStream video (Mozilla bug 1586505, still open), so
+the frames-only rule judged every video "never started"; Chromium implements it, so the tests passed.
+`www/kiosk-video-guard.js` now only observes and logs: it never reloads, never touches the DOM or
+localStorage, and registers one read-only `requestVideoFrameCallback` loop per video. It tracks
+`totalVideoFrames`, Firefox `mozPaintedFrames`/`mozDecodedFrames`/`mozParsedFrames`, rVFC callbacks and
+`currentTime` independently, plus readyState, paused, size and track state. Logbook ("Kiosk video guard
+(observe)"): a per-camera summary 2 min after load and every 30 min, and `WOULD-RESTART camera.X: no
+progress on <signals> for NN s` (at most every 5 min per camera) when every supported real signal has
+been flat for 45 s. Unit tests cover the Firefox-only paths with fake elements; the Playwright spec now
+expects a WOULD-RESTART log line and no reload, and stubs the deployed resource so it cannot double up
+with the injected copy. `configuration.yaml` resource bumped to `?v=2`. A rule to act on can be chosen
+from those logs; the soft-restart experiment (detach/re-attach `ha-camera-stream`) is a candidate.
+
+### Added `www/kiosk-video-guard.js` (phase 1, not yet deployed)
+A browser-side watchdog for the Kiosk's frozen camera panes (`camera.bi_subfront` froze on 31 Oct and
+1 Nov while go2rtc kept serving it, with no EOF lines for the second one, so the server-side watchdogs
+could not see it). Every 10 s it walks the DOM (including shadow roots) for visible `<video>` elements and
+tracks `getVideoPlaybackQuality().totalVideoFrames` and `currentTime`; a video with no progress for 45 s
+(or none ever for 90 s; "progress" is decoded frames only, `currentTime` just a fallback when `getVideoPlaybackQuality` is missing, as a frozen WebRTC video can keep advancing it) triggers a best-effort `logbook.log` and `location.reload()`. No action in the
+first 90 s, none while the page is hidden, at most one reload per 5 min, and after 3 reloads in 30 min it
+only logs. A complete no-op outside `/kiosk-main`. Decision logic is pure and unit-tested
+(`tools/tests/kiosk-video-guard.test.js`); `test-e2e/kiosk-video-guard.spec.js` injects the script into
+`kiosk-candidate` (no deploy) and checks all six videos are tracked, that pausing one reloads the page, and
+that it is inert on a non-allowed path. Phase 2 registers it under `lovelace: resources:`. `playwright.config.js`
+`testMatch` for the kiosk project now also matches the new spec.
+
 ### Credentials now come from `hl` (unraid-secretsman), not `.env`
 `HA_TOKEN` is injected with `hl exec --endpoint home-assistant --`, and Blue Iris credentials with
 `--secret BI_USER=blueiris/user --secret BI_PASS=blueiris/password`. Env var names are unchanged.

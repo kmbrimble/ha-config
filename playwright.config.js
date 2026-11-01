@@ -33,7 +33,7 @@ module.exports = defineConfig({
     // wall.spec.js can only ever run at 2000x1200.
     {
       name: 'kiosk',
-      testMatch: /kiosk\.spec\.js/,
+      testMatch: /kiosk(-video-guard)?\.spec\.js/,
       use: {
         viewport: DISPLAYS.kiosk,
         deviceScaleFactor: 1,
