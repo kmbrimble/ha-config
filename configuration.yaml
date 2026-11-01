@@ -74,11 +74,13 @@ lovelace:
     # so window.kioskEnergy exists before the chart's data generators run.
     - url: /local/kiosk-energy.js?v=5
       type: module
-    # Kiosk video guard (www/kiosk-video-guard.js): reloads the page when a camera <video> stops
-    # decoding frames. Loaded on every dashboard because resources are shared, but a complete
-    # no-op outside /kiosk-main (WallPanel and the rest are untouched). Nothing depends on it
-    # being awaited; it only starts a timer.
-    - url: /local/kiosk-video-guard.js?v=1
+    # Kiosk video guard (www/kiosk-video-guard.js), v2: OBSERVE-ONLY. It logs what each video
+    # progress signal does in the Kiosk's Firefox to the logbook and never reloads or touches the
+    # page. v1 (frames-only, reloading) was removed on 2026-11-02: Firefox reports
+    # getVideoPlaybackQuality().totalVideoFrames as 0 for MediaStream video (Mozilla bug 1586505), so
+    # every camera looked "never started" and the Kiosk was reloaded repeatedly. Loaded on every
+    # dashboard (resources are shared) but a complete no-op outside /kiosk-main. Bump ?v= on edits.
+    - url: /local/kiosk-video-guard.js?v=2
       type: module
   dashboards:
     kiosk-main:

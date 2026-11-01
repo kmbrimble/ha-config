@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Kiosk video guard v2 is observe-only (`?v=2`), v1 removed
+v1 misfired on the real Kiosk Firefox: from 05:27 on 2 Nov the logbook showed "Video stalled (all six
+cameras); reloading the Kiosk page" repeatedly until the 3-per-30-min cap. Firefox returns 0 for
+`getVideoPlaybackQuality().totalVideoFrames` on MediaStream video (Mozilla bug 1586505, still open), so
+the frames-only rule judged every video "never started"; Chromium implements it, so the tests passed.
+`www/kiosk-video-guard.js` now only observes and logs: it never reloads, never touches the DOM or
+localStorage, and registers one read-only `requestVideoFrameCallback` loop per video. It tracks
+`totalVideoFrames`, Firefox `mozPaintedFrames`/`mozDecodedFrames`/`mozParsedFrames`, rVFC callbacks and
+`currentTime` independently, plus readyState, paused, size and track state. Logbook ("Kiosk video guard
+(observe)"): a per-camera summary 2 min after load and every 30 min, and `WOULD-RESTART camera.X: no
+progress on <signals> for NN s` (at most every 5 min per camera) when every supported real signal has
+been flat for 45 s. Unit tests cover the Firefox-only paths with fake elements; the Playwright spec now
+expects a WOULD-RESTART log line and no reload, and stubs the deployed resource so it cannot double up
+with the injected copy. `configuration.yaml` resource bumped to `?v=2`. A rule to act on can be chosen
+from those logs; the soft-restart experiment (detach/re-attach `ha-camera-stream`) is a candidate.
+
 ### Added `www/kiosk-video-guard.js` (phase 1, not yet deployed)
 A browser-side watchdog for the Kiosk's frozen camera panes (`camera.bi_subfront` froze on 31 Oct and
 1 Nov while go2rtc kept serving it, with no EOF lines for the second one, so the server-side watchdogs

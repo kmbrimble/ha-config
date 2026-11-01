@@ -70,7 +70,7 @@ the deploy step.
 ├── tools/garagepi/             # zeversolar_mqtt.py (+ test), relay_mqtt.py + .service; the copies deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
-├── www/kiosk-video-guard.js    # reloads /kiosk-main when a camera <video> stops decoding frames (a resource)
+├── www/kiosk-video-guard.js    # observe-only: logs camera <video> progress signals on /kiosk-main (a resource)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -841,12 +841,17 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
   `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
-- **Kiosk video guard (deployed 2026-11-01)** is `www/kiosk-video-guard.js`, a `lovelace: resources:`
-  module that is a no-op outside `/kiosk-main`. It reloads the page when a visible `<video>` has decoded
-  no new frames for 45 s (90 s if it never started), at most once per 5 min and 3 times per 30 min, logging
-  to the logbook as "Kiosk video guard". It is the only watchdog that sees the browser's own frozen pane
-  (the go2rtc EOF watchdog cannot). Its spec, `test-e2e/kiosk-video-guard.spec.js`, injects it into
-  `kiosk-candidate`; edit `?v=` in the resource line after changing the file.
+- **Kiosk video guard (v2, OBSERVE-ONLY since 2026-11-02)** is `www/kiosk-video-guard.js`, a
+  `lovelace: resources:` module that is a no-op outside `/kiosk-main`. It never reloads or changes the
+  page. v1 reloaded when decoded frames stopped, and misfired on the real Kiosk Firefox: Firefox reports
+  `getVideoPlaybackQuality().totalVideoFrames` as 0 for MediaStream video (Mozilla bug 1586505), so all
+  six cameras looked "never started"; Chromium implements it, which is why the Playwright tests passed.
+  v2 tracks every signal separately (`tvf`, Firefox `mozPaintedFrames`/`mozDecodedFrames`/`mozParsedFrames`,
+  `requestVideoFrameCallback`, `currentTime`) and logs to the logbook as "Kiosk video guard (observe)": a
+  summary ~2 min after load and every 30 min, and `WOULD-RESTART camera.X ...` when no real signal has
+  progressed for 45 s. Read those entries to pick a freeze rule that works in Firefox before re-enabling
+  any action (a soft restart of just the stalled `ha-camera-stream` was shown to work in Chromium).
+  `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate`; bump `?v=` after editing the file.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
   the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
