@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Kiosk video guard v3 (`?v=3`): restarts only the stalled stream, shipped in observe mode
+v2's logs from the real Kiosk (Firefox 153) showed `totalVideoFrames`, `mozDecodedFrames` and
+`mozParsedFrames` flat at 0 on every video while `mozPaintedFrames` and `requestVideoFrameCallback` count
+up at ~14 fps. v3 uses that: a signal is "live" for an element only after it has advanced once, a video
+is stalled when it has live signals and all are flat for 45 s (never-started: nothing ever advanced for
+90 s), and `currentTime` is ignored. In `mode: 'act'` it restarts just that camera by detaching and
+re-attaching its `ha-camera-stream` in one tick (HA's `ha-web-rtc-player` closes its peer connection on
+disconnect and renegotiates on reconnect; first frame ~3 s) instead of reloading the page, which would
+reload MagicMirror, Immich, calendar/tasks, the energy chart and the climate tiles. Policy: 25 s settle,
+2 min per-camera cooldown, 2 failed restarts in 10 min => `ESCALATE` (logged; page reload only if
+`fallbackReload: true`, default off), and one round then a 5 min back-off when every video stalls at once.
+Shipped in `mode: 'observe'`: it logs `WOULD-SOFT-RESTART camera.X: flat for NN s on <signals>` and the
+summary lines (now with `mode=` and `live=`) and never touches the DOM. Switching to act mode is a
+separate step (edit `mode`, bump `?v=`). Soft restart has only been exercised in Chromium.
+
 ### Kiosk video guard v2 is observe-only (`?v=2`), v1 removed
 v1 misfired on the real Kiosk Firefox: from 05:27 on 2 Nov the logbook showed "Video stalled (all six
 cameras); reloading the Kiosk page" repeatedly until the 3-per-30-min cap. Firefox returns 0 for

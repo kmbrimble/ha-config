@@ -70,7 +70,7 @@ the deploy step.
 ├── tools/garagepi/             # zeversolar_mqtt.py (+ test), relay_mqtt.py + .service; the copies deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
-├── www/kiosk-video-guard.js    # observe-only: logs camera <video> progress signals on /kiosk-main (a resource)
+├── www/kiosk-video-guard.js    # restarts a stalled camera stream on /kiosk-main; observe mode by default (a resource)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -841,17 +841,23 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
   `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
-- **Kiosk video guard (v2, OBSERVE-ONLY since 2026-11-02)** is `www/kiosk-video-guard.js`, a
-  `lovelace: resources:` module that is a no-op outside `/kiosk-main`. It never reloads or changes the
-  page. v1 reloaded when decoded frames stopped, and misfired on the real Kiosk Firefox: Firefox reports
-  `getVideoPlaybackQuality().totalVideoFrames` as 0 for MediaStream video (Mozilla bug 1586505), so all
-  six cameras looked "never started"; Chromium implements it, which is why the Playwright tests passed.
-  v2 tracks every signal separately (`tvf`, Firefox `mozPaintedFrames`/`mozDecodedFrames`/`mozParsedFrames`,
-  `requestVideoFrameCallback`, `currentTime`) and logs to the logbook as "Kiosk video guard (observe)": a
-  summary ~2 min after load and every 30 min, and `WOULD-RESTART camera.X ...` when no real signal has
-  progressed for 45 s. Read those entries to pick a freeze rule that works in Firefox before re-enabling
-  any action (a soft restart of just the stalled `ha-camera-stream` was shown to work in Chromium).
-  `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate`; bump `?v=` after editing the file.
+- **Kiosk video guard (v3, shipped in OBSERVE mode 2026-11-02)** is `www/kiosk-video-guard.js`, a
+  `lovelace: resources:` module that is a no-op outside `/kiosk-main`. It restarts only a stalled camera
+  stream, not the page. History: v1 reloaded the page when decoded frames stopped and misfired on the
+  real Kiosk Firefox, which reports `getVideoPlaybackQuality().totalVideoFrames` as 0 for MediaStream
+  video (Mozilla bug 1586505); Chromium implements it, so the Playwright tests passed. The v2 logs showed
+  that on Firefox 153 `totalVideoFrames`, `mozDecodedFrames` and `mozParsedFrames` stay 0 while
+  `mozPaintedFrames` and `requestVideoFrameCallback` count up (~14 fps), so v3 is self-calibrating: a signal
+  counts only once it has advanced on that element, and a video is stalled when all its live signals are flat
+  for 45 s (or none ever advanced for 90 s). `currentTime` is never used.
+  - `mode: 'observe'` (the shipped default) never touches the DOM: logbook "Kiosk video guard (observe)" gets a
+    summary 2 min after load and every 30 min, and `WOULD-SOFT-RESTART camera.X` lines.
+  - `mode: 'act'` detaches and re-attaches that camera's `ha-camera-stream` (HA's player closes its
+    RTCPeerConnection on disconnect and renegotiates on reconnect), with a 25 s settle, 2 min cooldown, 2 failed
+    restarts in 10 min => `ESCALATE`, and a 5 min back-off when all videos stall at once. Full page reload is
+    off unless `fallbackReload: true`. The soft restart has only been exercised in Chromium, not Firefox.
+  - Switching to act mode is a deliberate separate step: edit `mode` in the file, bump `?v=`, run
+    `lovelace.reload_resources`. `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate` in both modes.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
   the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
