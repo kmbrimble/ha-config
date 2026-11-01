@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added `www/kiosk-video-guard.js` (phase 1, not yet deployed)
+A browser-side watchdog for the Kiosk's frozen camera panes (`camera.bi_subfront` froze on 31 Oct and
+1 Nov while go2rtc kept serving it, with no EOF lines for the second one, so the server-side watchdogs
+could not see it). Every 10 s it walks the DOM (including shadow roots) for visible `<video>` elements and
+tracks `getVideoPlaybackQuality().totalVideoFrames` and `currentTime`; a video with no progress for 45 s
+(or none ever for 90 s) triggers a best-effort `logbook.log` and `location.reload()`. No action in the
+first 90 s, none while the page is hidden, at most one reload per 5 min, and after 3 reloads in 30 min it
+only logs. A complete no-op outside `/kiosk-main`. Decision logic is pure and unit-tested
+(`tools/tests/kiosk-video-guard.test.js`); `test-e2e/kiosk-video-guard.spec.js` injects the script into
+`kiosk-candidate` (no deploy) and checks all six videos are tracked, that pausing one reloads the page, and
+that it is inert on a non-allowed path. Phase 2 registers it under `lovelace: resources:`. `playwright.config.js`
+`testMatch` for the kiosk project now also matches the new spec.
+
 ### Credentials now come from `hl` (unraid-secretsman), not `.env`
 `HA_TOKEN` is injected with `hl exec --endpoint home-assistant --`, and Blue Iris credentials with
 `--secret BI_USER=blueiris/user --secret BI_PASS=blueiris/password`. Env var names are unchanged.
