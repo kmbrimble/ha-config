@@ -70,6 +70,7 @@ the deploy step.
 ├── tools/garagepi/             # zeversolar_mqtt.py (+ test), relay_mqtt.py + .service; the copies deployed on garagepi
 ├── tools/tests/                # node unit tests (npm run test:unit)
 ├── www/kiosk-energy.js         # Kiosk energy-chart data, deployed to /config/www/ (a resource)
+├── www/kiosk-video-guard.js    # reloads /kiosk-main when a camera <video> stops decoding frames (a resource)
 ├── backups/                    # timestamped pre-change copies
 ├── dashboards/
 │   ├── kiosk-main.yaml         # live Kiosk dashboard
@@ -200,7 +201,7 @@ Run every `npm run test:e2e*` command below as `hl exec --endpoint home-assistan
 - `TARGET=live npm run test:e2e` — same suite against the **live** copies, for a post-deploy check
 - `npm run test:e2e:kiosk` / `npm run test:e2e:wall` — one display only
 - `npm run test:e2e:baseline` — rewrite the card-geometry baselines after an intended layout change
-- `npm run test:unit` — node unit tests in `tools/tests/` (the deploy lock and `www/kiosk-energy.js`); needs no HA
+- `npm run test:unit` — node unit tests in `tools/tests/` (the deploy lock, `www/kiosk-energy.js` and `www/kiosk-video-guard.js`); needs no HA
 
 The Playwright suite is the **only** harness that exercises HA, and it covers exactly one thing: that the two
 YAML dashboards render correctly at their display's resolution against the live HA instance.
@@ -840,6 +841,12 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
   `deploy_lock.py push www/kiosk-energy.js www/kiosk-energy.js`, bumping its `?v=` in
   `lovelace: resources:` (pushed the same way), then running `lovelace.reload_resources`.
   If the chart is empty, check the nectr config entry state before the card.
+- **Kiosk video guard (deployed 2026-11-01)** is `www/kiosk-video-guard.js`, a `lovelace: resources:`
+  module that is a no-op outside `/kiosk-main`. It reloads the page when a visible `<video>` has decoded
+  no new frames for 45 s (90 s if it never started), at most once per 5 min and 3 times per 30 min, logging
+  to the logbook as "Kiosk video guard". It is the only watchdog that sees the browser's own frozen pane
+  (the go2rtc EOF watchdog cannot). Its spec, `test-e2e/kiosk-video-guard.spec.js`, injects it into
+  `kiosk-candidate`; edit `?v=` in the resource line after changing the file.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
   the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
