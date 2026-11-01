@@ -857,7 +857,7 @@ existing block, the same caution as for `lovelace:` elsewhere in this file.
     restarts in 10 min => `ESCALATE`, and a 5 min back-off when all videos stall at once. Full page reload is
     off unless `fallbackReload: true`. The soft restart has only been exercised in Chromium, not Firefox.
   - Switching to act mode is a deliberate separate step: edit `mode` in the file, bump `?v=`, run
-    `lovelace.reload_resources`. `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate` in both modes.
+    `lovelace.reload_resources`, then refresh the Kiosk (the display keeps running the module it already loaded). `test-e2e/kiosk-video-guard.spec.js` injects it into `kiosk-candidate` in both modes.
 - **Blue Iris is the permanent NVR — there is no Frigate migration** (decided 2026-09-16). The
   `blueiris` custom component stays. It carries a local patch (`patches/blueiris/camera.py`, see
   the project doc `blueiris-session-watchdog.md`) that a HACS update will overwrite. After any update, re-apply it inside
