@@ -9,12 +9,12 @@
 // signals and ALL of them have been flat for stallMs. currentTime is never used.
 //
 // MODES (config.mode):
-//   'observe' (shipped default): never mutates the DOM or reloads. Logs summaries and
-//             WOULD-SOFT-RESTART lines to the logbook.
-//   'act':    soft-restarts the stalled camera: detach and re-attach its ha-camera-stream element in
+//   'observe': never mutates the DOM or reloads. Logs summaries and WOULD-SOFT-RESTART lines to the
+//             logbook. To go back to it, set `mode: 'observe'` below and bump ?v= in configuration.yaml.
+//   'act' (shipped default since v4): soft-restarts the stalled camera: detach and re-attach its ha-camera-stream element in
 //             the same tick. HA's ha-web-rtc-player tears down its RTCPeerConnection on disconnect and
 //             renegotiates on reconnect (verified in Chromium; the <video> node is reused). To switch
-//             modes edit `mode` below and bump the ?v= in configuration.yaml.
+//             modes edit `mode` below, bump the ?v= in configuration.yaml, reload resources, refresh the Kiosk.
 // config.fallbackReload (default false): after repeated failed soft restarts, also allow the old full
 // page reload (1 per 5 min, max 3 per 30 min, tracked in localStorage).
 //
@@ -23,7 +23,7 @@
 // The decision logic is pure and exported; tools/tests/kiosk-video-guard.test.js covers it in node.
 
 export const DEFAULTS = {
-  mode: 'observe', // 'observe' | 'act'
+  mode: 'act', // 'observe' | 'act'
   fallbackReload: false,
   allowedPaths: ['/kiosk-main'], // tests also allow '/kiosk-candidate' via the override below
   tickMs: 10_000,

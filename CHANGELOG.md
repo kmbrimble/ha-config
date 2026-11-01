@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Kiosk video guard v4 (`?v=4`): act mode
+After an hour of clean observe-mode logs on the real Kiosk (Firefox 153: no WOULD-SOFT-RESTART, no ESCALATE,
+`live=painted,rvfc` on all six cameras at ~13.8 fps) the shipped `mode` is now `'act'`: a camera whose live
+frame signals are all flat for 45 s (or that never started within 90 s) has just its `ha-camera-stream`
+detached and re-attached, instead of reloading the page. The page-reload fallback stays OFF
+(`fallbackReload: false`). Restarts are logged as "Kiosk video guard" (`Soft-restarted camera.X ...`).
+Not validated: no real freeze occurred in the observation window, so true-positive detection in Firefox
+and the soft restart in Firefox (only Chromium so far) are unproven. To go back to observe-only: set
+`mode: 'observe'`, bump `?v=`, reload resources, refresh the Kiosk.
+
 ### Kiosk video guard v3 (`?v=3`): restarts only the stalled stream, shipped in observe mode
 v2's logs from the real Kiosk (Firefox 153) showed `totalVideoFrames`, `mozDecodedFrames` and
 `mozParsedFrames` flat at 0 on every video while `mozPaintedFrames` and `requestVideoFrameCallback` count

@@ -49,9 +49,9 @@ test('path allow-list: kiosk-main and sub-paths only', async () => {
   for (const bad of ['/wall-main', '/kiosk-mainx', '/kiosk-candidate', '/lovelace/0', '/']) assert.ok(!pathAllowed(bad, p), bad);
 });
 
-test('shipped defaults: observe mode, fallbackReload off', async () => {
+test('shipped defaults: act mode, fallbackReload off', async () => {
   const { DEFAULTS } = await load();
-  assert.equal(DEFAULTS.mode, 'observe');
+  assert.equal(DEFAULTS.mode, 'act');
   assert.equal(DEFAULTS.fallbackReload, false);
   assert.deepEqual([DEFAULTS.stallMs, DEFAULTS.neverStartedMs, DEFAULTS.settleMs, DEFAULTS.cooldownMs, DEFAULTS.graceMs], [45000, 90000, 25000, 120000, 90000]);
 });
