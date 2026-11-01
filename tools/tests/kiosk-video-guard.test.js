@@ -39,21 +39,28 @@ test('stalled at exactly 45 s without progress, not at 44 s', async () => {
   assert.equal(m.isStalled(e, 65 * S, cfg), true);
 });
 
-test('currentTime alone counts as progress; frames alone counts as progress', async () => {
-  const a = await run([[0, 5, 1], [10, 5, 2]]); // frozen frames, time moving
-  assert.equal(a.e.lastProgress, 10 * S);
-  const b = await run([[0, 5, 1], [10, 6, 1]]); // frames moving, time stuck
-  assert.equal(b.e.lastProgress, 10 * S);
-});
-
-test('useCurrentTime:false judges by frames alone', async () => {
-  const { e } = await run([[0, 5, 1], [10, 5, 2]], { useCurrentTime: false });
-  assert.equal(e.lastProgress, null);
-});
-
-test('no getVideoPlaybackQuality: currentTime is the fallback', async () => {
-  const { e } = await run([[0, null, 1], [10, null, 2]], { useCurrentTime: false });
+test('frames alone count as progress', async () => {
+  const { e } = await run([[0, 5, 1], [10, 6, 1]]); // frames moving, time stuck
   assert.equal(e.lastProgress, 10 * S);
+});
+
+test('currentTime advancing with frozen frames is stalled at 45 s', async () => {
+  const { m, cfg, e } = await run([[0, 5, 1], [10, 50, 10], [20, 50, 20], [30, 50, 30], [64, 50, 64]]);
+  assert.equal(e.lastProgress, 10 * S); // last real progress: frames at t=10
+  assert.equal(m.isStalled(e, 54 * S, cfg), false);
+  assert.equal(m.isStalled(e, 55 * S, cfg), true);
+});
+
+test('useCurrentTime:true opt-in lets currentTime count even with frames available', async () => {
+  const { e } = await run([[0, 5, 1], [10, 5, 2]], { useCurrentTime: true });
+  assert.equal(e.lastProgress, 10 * S);
+});
+
+test('API absent (frames null): currentTime is the fallback, by default', async () => {
+  const { m, cfg, e } = await run([[0, null, 1], [10, null, 2]]);
+  assert.equal(e.lastProgress, 10 * S);
+  assert.equal(m.isStalled(e, 54 * S, cfg), false);
+  assert.equal(m.isStalled(e, 55 * S, cfg), true);
 });
 
 test('never started: stalled at 90 s since first seen, not before', async () => {

@@ -22,10 +22,10 @@ export const DEFAULTS = {
   logGapMs: 5 * 60_000, // in log-only mode, log at most this often
   logTimeoutMs: 1000, // never let the logbook call delay the reload longer than this
   logToHA: true, // tests turn this off: it would write to the live logbook
-  // currentTime keeps advancing on some stalled MediaStream videos, which would hide a freeze.
-  // Set false to judge by decoded frames alone (currentTime is then only a fallback where
-  // getVideoPlaybackQuality is unavailable).
-  useCurrentTime: true,
+  // Progress = decoded frames (totalVideoFrames) only: a frozen live WebRTC video can keep advancing
+  // currentTime with no new frames. currentTime is used only where getVideoPlaybackQuality is missing;
+  // set true to also count it when frames are available (opt-in, hides that kind of freeze).
+  useCurrentTime: false,
   storageKey: 'kioskVideoGuard.reloads',
 };
 

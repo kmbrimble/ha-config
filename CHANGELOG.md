@@ -7,7 +7,7 @@ A browser-side watchdog for the Kiosk's frozen camera panes (`camera.bi_subfront
 1 Nov while go2rtc kept serving it, with no EOF lines for the second one, so the server-side watchdogs
 could not see it). Every 10 s it walks the DOM (including shadow roots) for visible `<video>` elements and
 tracks `getVideoPlaybackQuality().totalVideoFrames` and `currentTime`; a video with no progress for 45 s
-(or none ever for 90 s) triggers a best-effort `logbook.log` and `location.reload()`. No action in the
+(or none ever for 90 s; "progress" is decoded frames only, `currentTime` just a fallback when `getVideoPlaybackQuality` is missing, as a frozen WebRTC video can keep advancing it) triggers a best-effort `logbook.log` and `location.reload()`. No action in the
 first 90 s, none while the page is hidden, at most one reload per 5 min, and after 3 reloads in 30 min it
 only logs. A complete no-op outside `/kiosk-main`. Decision logic is pure and unit-tested
 (`tools/tests/kiosk-video-guard.test.js`); `test-e2e/kiosk-video-guard.spec.js` injects the script into
